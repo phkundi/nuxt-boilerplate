@@ -5,13 +5,35 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
+    "dev:https": "NODE_TLS_REJECT_UNAUTHORIZED=0 nuxt dev --https --ssl-cert localhost.pem --ssl-key localhost-key.pem",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@gtm-support/vue-gtm": "^2.2.0",
+    "@nuxt/content": "^2.12.1",
+    "@pinia/nuxt": "^0.5.1",
+    "@tailwindcss/forms": "^0.5.7",
+    "add": "^2.0.6",
+    "dayjs": "^1.11.10",
+    "http-proxy-middleware": "^3.0.0",
+    "js-cookie": "^3.0.5",
+    "jwt-decode": "^4.0.0",
     "nuxt": "^3.13.0",
-    "vue": "latest",
-    "vue-router": "latest"
+    "pinia": "^2.1.7",
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.0"
+  },
+  "devDependencies": {
+    "@vite-pwa/nuxt": "^0.6.0",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "sass": "^1.74.1",
+    "tailwindcss": "^3.4.3",
+    "workbox-expiration": "^7.1.0",
+    "workbox-precaching": "^7.1.0",
+    "workbox-routing": "^7.1.0",
+    "workbox-strategies": "^7.1.0"
   }
 }
