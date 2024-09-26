@@ -7,6 +7,7 @@ export default defineNuxtConfig({
 
   plugins: [
     "~/plugins/global-components.js",
+    "~/plugins/pinia-persistedstate.js",
     // "~/plugins/vue-gtm.client.js" // Uncomment to enable Google Tag Manager
   ],
 
@@ -17,6 +18,10 @@ export default defineNuxtConfig({
       tailwindcss: {},
       autoprefixer: {},
     },
+  },
+
+  imports: {
+    dirs: ["store", "endpoints"],
   },
 
   runtimeConfig: {

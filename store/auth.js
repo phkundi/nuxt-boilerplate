@@ -35,9 +35,10 @@ export const useAuthStore = defineStore("auth", {
 
           // Fallback error message if the structure wasn't as expected
           throw new Error("Registration failed due to an unexpected error.");
-        }
 
-        this.login(credentials);
+          // Optionally, auto-login after successful registration
+          // await this.login(credentials);
+        }
       } catch (error) {
         console.error("Registration error:", error);
         throw error;
@@ -53,12 +54,10 @@ export const useAuthStore = defineStore("auth", {
 
         const authTokens = response;
 
-        const user = jwtDecode(authTokens.access);
-        this.user = user;
-        this.isAuthenticated = true;
         this.authTokens = authTokens;
+        this.isAuthenticated = true;
 
-        localStorage.setItem("authTokens", JSON.stringify(authTokens));
+        await this.fetchUser();
       } catch (error) {
         console.error("Login error:", error);
         throw error;
@@ -67,35 +66,24 @@ export const useAuthStore = defineStore("auth", {
     logout() {
       this.user = null;
       this.isAuthenticated = false;
-      localStorage.removeItem("authTokens");
+      this.authTokens = null;
     },
-    checkAuth() {
-      this.authTokens = JSON.parse(localStorage.getItem("authTokens"));
-      if (this.authTokens) {
-        this.isAuthenticated = true;
-        this.user = jwtDecode(this.authTokens.access);
-        return this.user;
-      }
-      return false;
-    },
+
     async fetchUser() {
       try {
         const url = getEndpoint({ path: "auth.getUser" });
         const response = await this.authedGet(url);
-
         const data = await response.json();
+
+        this.user = data;
         return data;
       } catch (error) {
         console.error("Fetch user error:", error);
         return false;
       }
     },
-
     async retrieveValidToken() {
-      this.authTokens = JSON.parse(localStorage.getItem("authTokens"));
-      if (!this.authTokens) {
-        return null;
-      }
+      if (!this.authTokens) return null;
 
       const user = jwtDecode(this.authTokens.access);
       const isExpired = dayjs.unix(user.exp).diff(dayjs(), "minute") < 1;
@@ -106,10 +94,7 @@ export const useAuthStore = defineStore("auth", {
         try {
           const newTokens = await this.refreshToken();
           if (newTokens) {
-            localStorage.setItem("authTokens", JSON.stringify(newTokens));
             this.authTokens = newTokens;
-            this.user = jwtDecode(newTokens.access);
-
             return newTokens.access;
           }
         } catch (err) {
@@ -145,6 +130,8 @@ export const useAuthStore = defineStore("auth", {
       const accessToken = await this.retrieveValidToken();
 
       if (!accessToken) {
+        console.log("No auth token found");
+        this.logout();
         return Promise.reject("No auth token found");
       }
 
