@@ -1,0 +1,23 @@
+{
+  "name": "NuxtPWA",
+  "short_name": "NuxtPWA",
+  "start_url": "/app",
+  "display": "standalone",
+  "background_color": "#fff",
+  "theme_color": "#fff",
+  "description": "Boilerplate for Nuxt 3 PWA",
+  "id": "boilerplate",
+  "dir": "ltr",
+  "scope": "https://production-domain.com",
+  "lang": "en",
+  "orientation": "portrait",
+  "display_override": [
+    "fullscreen",
+    "browser",
+    "standalone",
+    "window-controls-overlay"
+  ],
+  "categories": [],
+  "icons": [],
+  "screenshots": []
+}

@@ -1,3 +1,5 @@
+// Set up Google Tag manager for analytics
+
 import { createGtm } from "@gtm-support/vue-gtm";
 import Cookies from "js-cookie";
 

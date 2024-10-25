@@ -1,10 +1,10 @@
 <template>
-  <div>default layout</div>
+  <div class="py-4 flex justify-center bg-slate-100">default layout</div>
   <slot />
 </template>
 <script setup>
 const authStore = useAuthStore();
-const { logout, fetchUser } = authStore;
+const { logout, fetchUser, isAuthenticated } = authStore;
 
 const handleLogout = () => {
   logout();
@@ -12,7 +12,7 @@ const handleLogout = () => {
 };
 
 onMounted(async () => {
-  if (authStore.isAuthenticated) {
+  if (isAuthenticated) {
     await fetchUser();
   }
 });

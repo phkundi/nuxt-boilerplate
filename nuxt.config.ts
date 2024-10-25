@@ -8,11 +8,11 @@ export default defineNuxtConfig({
   plugins: [
     "~/plugins/global-components.js",
     "~/plugins/pinia-persistedstate.js",
+    // "~/plugins/firebase.client.js",
     // "~/plugins/vue-gtm.client.js" // Uncomment to enable Google Tag Manager
   ],
 
   css: ["~/assets/css/main.scss"],
-
   postcss: {
     plugins: {
       tailwindcss: {},
@@ -21,13 +21,18 @@ export default defineNuxtConfig({
   },
 
   imports: {
-    dirs: ["store", "endpoints"],
+    dirs: ["store", "endpoints"], // Auto imports files from the specified directories
   },
 
   runtimeConfig: {
     public: {
       siteUrl: process.env.SITE_URL,
-      apiUrl: process.env.API_URL,
+      apiUrl:
+        process.env.NODE_ENV === "development"
+          ? process.env.NUXT_DEV_HTTPS === "true"
+            ? process.env.API_URL?.replace("http://", "https://")
+            : process.env.API_URL
+          : process.env.API_URL, // in production, your app should always be served via https
       vapidPublicKey: process.env.VAPID_PUBLIC_KEY,
       gtm: {
         id: process.env.GTAG_ID,
@@ -54,11 +59,11 @@ export default defineNuxtConfig({
         },
         {
           name: "msapplication-TileColor",
-          content: "#2d89ef",
+          content: "#fff",
         },
         {
           name: "theme-color",
-          content: "#111b30",
+          content: "#fff",
         },
         {
           name: "description",
@@ -69,7 +74,52 @@ export default defineNuxtConfig({
           content: process.env.SITE_URL + "/img/og-image.png",
         },
       ],
-      link: [],
+      link: [
+        {
+          rel: "manifest",
+          href: "/site.webmanifest",
+        },
+      ],
     },
+  },
+  pwa: {
+    devOptions: {
+      enabled: process.env.NODE_ENV === "development",
+      type: "module",
+    },
+    injectRegister: "auto",
+    registerType: "autoUpdate",
+    strategies: "injectManifest",
+    srcDir: "pwa",
+    filename: "sw.js",
+    injectManifest: {
+      globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+    },
+    workbox: {
+      globPatterns: ["**/*.{js,css,html,ico,png,svg}", "/offline"],
+      navigateFallback: "/offline",
+      runtimeCaching: [
+        {
+          urlPattern: ".*.(js|css|png|jpg|jpeg|svg|woff|woff2|eot|ttf|otf)$",
+          handler: "CacheFirst",
+          options: {
+            cacheName: "asset-cache",
+            expiration: {
+              maxEntries: 1000,
+              maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+            },
+          },
+        },
+      ],
+    },
+    includeAssets: [
+      "favicon.ico",
+      "apple-touch-icon.png",
+      "mask-icon.svg",
+      "fonts/*.woff",
+      "fonts/*.woff2",
+      "img/*.png",
+    ],
+    manifest: false,
   },
 });
