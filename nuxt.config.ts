@@ -7,11 +7,15 @@ export default defineNuxtConfig({
 
   plugins: [
     "~/plugins/global-components.js",
+    "~/plugins/fontawesome.js",
     // "~/plugins/firebase.client.js",
     // "~/plugins/vue-gtm.client.js" // Uncomment to enable Google Tag Manager
   ],
 
-  css: ["~/assets/css/main.scss"],
+  css: [
+    "~/assets/css/main.scss",
+    "@fortawesome/fontawesome-svg-core/styles.css",
+  ],
   postcss: {
     plugins: {
       tailwindcss: {},
