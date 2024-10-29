@@ -7,7 +7,6 @@ export default defineNuxtConfig({
 
   plugins: [
     "~/plugins/global-components.js",
-    "~/plugins/pinia-persistedstate.js",
     // "~/plugins/firebase.client.js",
     // "~/plugins/vue-gtm.client.js" // Uncomment to enable Google Tag Manager
   ],

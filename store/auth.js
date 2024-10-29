@@ -2,14 +2,27 @@ import { defineStore } from "pinia";
 import { jwtDecode } from "jwt-decode";
 import dayjs from "dayjs";
 import { getEndpoint } from "~/endpoints/endpoints";
+import { useAuthCookies } from "~/composables/useAuthCookies";
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
     user: null,
     isAuthenticated: false,
-    authTokens: null,
   }),
   actions: {
+    async initializeAuth() {
+      try {
+        const token = await this.retrieveValidToken();
+        if (token) {
+          await this.fetchUser();
+        }
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+        this.logout();
+      } finally {
+        this.isInitialized = true;
+      }
+    },
     async register(credentials, inviterId) {
       try {
         const url = getEndpoint({ path: "auth.register" });
@@ -52,9 +65,12 @@ export const useAuthStore = defineStore("auth", {
           body: JSON.stringify(credentials),
         });
 
-        const authTokens = response;
+        const { accessToken, refreshToken } = useAuthCookies();
 
-        this.authTokens = authTokens;
+        // Store tokens in cookies
+        accessToken.value = response.access;
+        refreshToken.value = response.refresh;
+
         this.isAuthenticated = true;
 
         await this.fetchUser();
@@ -64,9 +80,13 @@ export const useAuthStore = defineStore("auth", {
       }
     },
     logout() {
+      const { accessToken, refreshToken } = useAuthCookies();
+
+      // Clear cookies
+      accessToken.value = null;
+      refreshToken.value = null;
       this.user = null;
       this.isAuthenticated = false;
-      this.authTokens = null;
     },
 
     async fetchUser() {
@@ -76,6 +96,7 @@ export const useAuthStore = defineStore("auth", {
         const data = await response.json();
 
         this.user = data;
+        this.isAuthenticated = true;
         return data;
       } catch (error) {
         console.error("Fetch user error:", error);
@@ -83,9 +104,14 @@ export const useAuthStore = defineStore("auth", {
       }
     },
     async retrieveValidToken() {
-      if (!this.authTokens) return null;
+      const { accessToken, refreshToken } = useAuthCookies();
 
-      const user = jwtDecode(this.authTokens.access);
+      if (!accessToken.value) {
+        console.log("No access token found");
+        return null;
+      }
+
+      const user = jwtDecode(accessToken.value);
       const isExpired = dayjs.unix(user.exp).diff(dayjs(), "minute") < 1;
 
       // Check if token is still valid
@@ -94,7 +120,8 @@ export const useAuthStore = defineStore("auth", {
         try {
           const newTokens = await this.refreshToken();
           if (newTokens) {
-            this.authTokens = newTokens;
+            accessToken.value = newTokens.access;
+            refreshToken.value = newTokens.refresh;
             return newTokens.access;
           }
         } catch (err) {
@@ -103,20 +130,17 @@ export const useAuthStore = defineStore("auth", {
         }
       }
 
-      return this.authTokens.access;
+      return accessToken.value;
     },
     async refreshToken() {
-      const rToken = this.authTokens?.refresh;
-      if (!rToken) {
-        console.error("No refresh token available");
-        return null;
-      }
+      const { refreshToken } = useAuthCookies();
+      if (!refreshToken.value) return null;
 
       try {
         const url = getEndpoint({ path: "auth.refreshToken" });
         const response = await $fetch(url, {
           method: "POST",
-          body: JSON.stringify({ refresh: rToken }),
+          body: JSON.stringify({ refresh: refreshToken.value }),
         });
         return response;
       } catch (error) {

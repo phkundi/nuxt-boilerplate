@@ -12,9 +12,13 @@
 </template>
 <script setup>
 const authStore = useAuthStore();
+const { isAuthenticated } = storeToRefs(authStore);
 
 onMounted(async () => {
-  if (authStore.isAuthenticated) {
+  if (!authStore.isInitialized) {
+    await authStore.initializeAuth();
+  }
+  if (isAuthenticated.value) {
     router.push("/");
   }
 });
