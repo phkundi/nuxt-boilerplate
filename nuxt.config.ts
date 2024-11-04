@@ -6,10 +6,10 @@ export default defineNuxtConfig({
   modules: ["@vite-pwa/nuxt", "@pinia/nuxt", "@nuxt/content"],
 
   plugins: [
-    "~/plugins/global-components.js",
-    "~/plugins/fontawesome.js",
-    // "~/plugins/firebase.client.js",
-    // "~/plugins/vue-gtm.client.js" // Uncomment to enable Google Tag Manager
+    "~/plugins/global-components.ts",
+    "~/plugins/fontawesome.ts",
+    // "~/plugins/firebase.client.ts",
+    // "~/plugins/vue-gtm.client.ts" // Uncomment to enable Google Tag Manager
   ],
 
   css: [
