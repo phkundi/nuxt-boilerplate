@@ -2,9 +2,16 @@
 
 import { createGtm } from "@gtm-support/vue-gtm";
 import Cookies from "js-cookie";
+import type { Plugin } from "nuxt/app";
+
+interface GTMConfig {
+  id: string;
+  enabled: boolean;
+  debug: boolean;
+}
 
 export default defineNuxtPlugin((nuxtApp) => {
-  const gtmConfig = useRuntimeConfig().public.gtm;
+  const gtmConfig = useRuntimeConfig().public.gtm as GTMConfig;
   const consentGiven = Cookies.get("userConsent") === "granted";
   const router = useRouter();
 
@@ -20,4 +27,4 @@ export default defineNuxtPlugin((nuxtApp) => {
       trackOnNextTick: false,
     })
   );
-});
+}) satisfies Plugin;

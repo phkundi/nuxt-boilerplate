@@ -2,17 +2,21 @@
   <div class="py-4 flex justify-center bg-slate-100">default layout</div>
   <slot />
 </template>
-<script setup>
-const authStore = useAuthStore();
-const { logout, fetchUser, isAuthenticated } = authStore;
+<script setup lang="ts">
+import type { Router } from "vue-router";
 
-const handleLogout = () => {
+const authStore = useAuthStore();
+const { logout, fetchUser } = authStore;
+const { isAuthenticated } = storeToRefs(authStore);
+const router: Router = useRouter();
+
+const handleLogout = async (): Promise<void> => {
   logout();
-  router.push("/login");
+  await router.push("/login");
 };
 
-onMounted(async () => {
-  if (isAuthenticated) {
+onMounted(async (): Promise<void> => {
+  if (isAuthenticated.value) {
     await fetchUser();
   }
 });

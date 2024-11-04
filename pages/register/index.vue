@@ -40,7 +40,7 @@
                     id="first_name"
                     name="first_name"
                     type="text"
-                    required=""
+                    required="true"
                     class="block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
                     v-model="credentials.first_name"
                     placeholder="John"
@@ -65,7 +65,7 @@
                     name="email"
                     type="email"
                     autocomplete="email"
-                    required=""
+                    required="true"
                     class="block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
                     v-model="credentials.email"
                     placeholder="john@doe.com"
@@ -90,7 +90,7 @@
                     name="password"
                     type="password"
                     autocomplete="current-password"
-                    required=""
+                    required="true"
                     class="block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
                     v-model="credentials.password"
                     placeholder="********"
@@ -113,7 +113,7 @@
                     id="password2"
                     name="password2"
                     type="password"
-                    required=""
+                    required="true"
                     class="block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
                     v-model="credentials.password2"
                     placeholder="********"
@@ -136,7 +136,7 @@
                     id="birthday"
                     name="birthday"
                     type="date"
-                    required=""
+                    required="true"
                     class="block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
                     v-model="credentials.birthday"
                     placeholder="2000-01-01"
@@ -166,8 +166,8 @@
     </div>
   </NuxtLayout>
 </template>
-<script setup>
-import { useAuthStore } from "@/store/auth";
+<script setup lang="ts">
+import { type RegisterCredentials } from "~/types/auth";
 
 const { register } = useAuthStore();
 
@@ -175,9 +175,9 @@ definePageMeta({
   layout: "auth",
 });
 
-const error = ref("");
+const error = ref<string | null>(null);
 const loading = ref(false);
-const credentials = reactive({
+const credentials = reactive<RegisterCredentials>({
   first_name: "",
   email: "",
   password: "",
@@ -193,14 +193,14 @@ const credentialValidations = reactive({
   password2: { isValid: true, message: "" },
 });
 
-const checkBirthday = () => {
+const checkBirthday = (): boolean => {
   const birthday = new Date(credentials.birthday);
   const today = new Date();
   const age = today.getFullYear() - birthday.getFullYear();
   return age >= 18;
 };
 
-const validateEmail = () => {
+const validateEmail = (): void => {
   if (!credentials.email) {
     credentialValidations.email.isValid = false;
     credentialValidations.email.message = "Email is required.";
@@ -210,7 +210,7 @@ const validateEmail = () => {
   }
 };
 
-const validateFirstName = () => {
+const validateFirstName = (): void => {
   if (!credentials.first_name) {
     credentialValidations.first_name.isValid = false;
     credentialValidations.first_name.message = "First name is required.";
@@ -220,7 +220,7 @@ const validateFirstName = () => {
   }
 };
 
-const validatePassword = () => {
+const validatePassword = (): void => {
   if (!credentials.password) {
     credentialValidations.password.isValid = false;
     credentialValidations.password.message = "Password is required.";
@@ -235,7 +235,7 @@ const validatePassword = () => {
   validateRepeatPassword(); // Ensure repeat password is re-validated when password changes
 };
 
-const validateRepeatPassword = () => {
+const validateRepeatPassword = (): void => {
   if (!credentials.password2) {
     credentialValidations.password2.isValid = false;
     credentialValidations.password2.message = "Repeat password is required.";
@@ -248,7 +248,7 @@ const validateRepeatPassword = () => {
   }
 };
 
-const validateBirthday = () => {
+const validateBirthday = (): void => {
   if (!credentials.birthday) {
     credentialValidations.birthday.isValid = false;
     credentialValidations.birthday.message = "Birthday is required.";
@@ -264,7 +264,7 @@ const validateBirthday = () => {
   }
 };
 
-const isInvalidForm = computed(() => {
+const isInvalidForm = computed((): boolean => {
   return (
     !credentialValidations.email.isValid ||
     !credentialValidations.first_name.isValid ||
@@ -274,7 +274,7 @@ const isInvalidForm = computed(() => {
   );
 });
 
-const disableSubmit = computed(() => {
+const disableSubmit = computed((): boolean => {
   return (
     !credentials.email ||
     !credentials.first_name ||
@@ -284,7 +284,7 @@ const disableSubmit = computed(() => {
   );
 });
 
-const handleSubmit = async () => {
+const handleSubmit = async (): Promise<void> => {
   loading.value = true;
   error.value = null;
 
@@ -302,8 +302,12 @@ const handleSubmit = async () => {
   try {
     await register(credentials);
     alert("Registration successful");
-  } catch (error) {
-    error.value = error.message;
+  } catch (err) {
+    if (err instanceof Error) {
+      error.value = err.message;
+    } else {
+      error.value = "An unknown error occurred";
+    }
   } finally {
     loading.value = false;
   }

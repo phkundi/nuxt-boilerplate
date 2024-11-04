@@ -3,6 +3,7 @@
 // import { initializeApp, getApps } from "firebase/app";
 // import firebaseConfig from "~/constants/firebase";
 // import { getMessaging, onMessage } from "firebase/messaging";
+// import type { Plugin } from "nuxt/app";
 
 // export default defineNuxtPlugin(() => {
 //   const app =
@@ -23,4 +24,4 @@
 //       messaging,
 //     },
 //   };
-// });
+// }) satisfies Plugin;

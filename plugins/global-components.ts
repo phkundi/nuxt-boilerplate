@@ -13,4 +13,6 @@
     Now, you can use the <Alert> component in any other component without importing it
 */
 
-export default defineNuxtPlugin((nuxtApp) => {});
+import type { Plugin } from "nuxt/app";
+
+export default defineNuxtPlugin((nuxtApp) => {}) satisfies Plugin;

@@ -7,10 +7,10 @@
   </div>
   <NuxtPage v-else />
 </template>
-<script setup>
+<script setup lang="ts">
 const authStore = useAuthStore();
 
-onMounted(async () => {
+onMounted(async (): Promise<void> => {
   // Initialize auth state
   if (!authStore.isInitialized) {
     await authStore.initializeAuth();

@@ -10,16 +10,19 @@
     </div>
   </div>
 </template>
-<script setup>
+<script setup lang="ts">
+import type { Router } from "vue-router";
+
 const authStore = useAuthStore();
 const { isAuthenticated } = storeToRefs(authStore);
+const router: Router = useRouter();
 
-onMounted(async () => {
+onMounted(async (): Promise<void> => {
   if (!authStore.isInitialized) {
     await authStore.initializeAuth();
   }
   if (isAuthenticated.value) {
-    router.push("/");
+    await router.push("/");
   }
 });
 </script>
