@@ -2,17 +2,23 @@
 
 // import { initializeApp } from "firebase/app";
 // import { onBackgroundMessage, getMessaging } from "firebase/messaging/sw";
-// import firebaseConfig from "~/constants/firebase";
 
 // let messaging;
+// let firebaseConfig;
 
-// self.addEventListener("activate", async () => {
+// self.addEventListener("message", (event) => {
+//   if (event.data && event.data.type === "FIREBASE_CONFIG") {
+//     firebaseConfig = event.data.config;
+//     initializeFirebase();
+//   }
+// });
+
+// // Initialize Firebase only after config is received from the client
+// function initializeFirebase() {
 //   try {
-//     if (!messaging) {
+//     if (!messaging && firebaseConfig) {
 //       const firebaseApp = initializeApp(firebaseConfig);
 //       messaging = getMessaging(firebaseApp);
-
-//       console.log("Firebase messaging initialized in SW");
 
 //       onBackgroundMessage(messaging, (payload) => {
 //         console.log("Received background message ", payload);
@@ -37,4 +43,4 @@
 //   } catch (error) {
 //     console.error("Firebase initialization error in SW:", error);
 //   }
-// });
+// }

@@ -11,15 +11,16 @@
   </div>
 </template>
 <script setup>
+// import { initializeNotifications } from "~/helpers/pushHelpers";
+
 const authStore = useAuthStore();
 const { isAuthenticated } = storeToRefs(authStore);
 
 onMounted(async () => {
-  if (!authStore.isInitialized) {
-    await authStore.initializeAuth();
-  }
-  if (isAuthenticated.value) {
+  if (!isAuthenticated.value) {
     router.push("/");
+  } else {
+    // await initializeNotifications();
   }
 });
 </script>

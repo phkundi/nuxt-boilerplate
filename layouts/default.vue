@@ -4,16 +4,19 @@
 </template>
 <script setup>
 const authStore = useAuthStore();
-const { logout, fetchUser, isAuthenticated } = authStore;
+const { logout, fetchUser } = authStore;
+const { isAuthentticated } = storeToRefs(authStore);
 
 const handleLogout = () => {
   logout();
   router.push("/login");
 };
 
-onMounted(async () => {
-  if (isAuthenticated) {
-    await fetchUser();
-  }
-});
+// import { initializeNotifications } from "~/helpers/pushHelpers";
+
+// onMounted(async () => {
+//   if (isAuthentticated.value) {
+//     await initializeNotifications();
+//   }
+// });
 </script>

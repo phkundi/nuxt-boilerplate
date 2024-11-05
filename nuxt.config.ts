@@ -37,6 +37,7 @@ export default defineNuxtConfig({
             : process.env.API_URL
           : process.env.API_URL, // in production, your app should always be served via https
       vapidPublicKey: process.env.VAPID_PUBLIC_KEY,
+      firebaseEnv: process.env.FIREBASE_ENV,
       gtm: {
         id: process.env.GTAG_ID,
         enabled: false,
