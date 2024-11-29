@@ -2,21 +2,22 @@
   <div class="py-4 flex justify-center bg-slate-100">default layout</div>
   <slot />
 </template>
-<script setup>
+<script setup lang="ts">
+import type { Router } from "vue-router";
+
 const authStore = useAuthStore();
 const { logout, fetchUser } = authStore;
-const { isAuthentticated } = storeToRefs(authStore);
+const { isAuthenticated } = storeToRefs(authStore);
+const router: Router = useRouter();
 
-const handleLogout = () => {
+const handleLogout = async (): Promise<void> => {
   logout();
-  router.push("/login");
+  await router.push("/login");
 };
 
-// import { initializeNotifications } from "~/helpers/pushHelpers";
-
-// onMounted(async () => {
-//   if (isAuthentticated.value) {
-//     await initializeNotifications();
-//   }
-// });
+onMounted(async (): Promise<void> => {
+  if (isAuthenticated.value) {
+    await fetchUser();
+  }
+});
 </script>

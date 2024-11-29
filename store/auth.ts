@@ -3,12 +3,41 @@ import { jwtDecode } from "jwt-decode";
 import dayjs from "dayjs";
 import { getEndpoint } from "~/endpoints/endpoints";
 import { useAuthCookies } from "~/composables/useAuthCookies";
+import {
+  type AuthState,
+  type LoginCredentials,
+  type RegisterCredentials,
+  type User,
+} from "~/types/auth";
+
+interface TokenResponse {
+  access: string;
+  refresh: string;
+}
+
+interface JWTPayload {
+  exp: number;
+  // Add other JWT claims you might use
+  iat?: number;
+  sub?: string;
+  user_id: number | string;
+}
+
+interface ExtendedRequestInit extends RequestInit {
+  data?: any;
+}
+
+interface ApiErrorResponse {
+  [key: string]: string[]; // Each field can have multiple error messages
+}
 
 export const useAuthStore = defineStore("auth", {
-  state: () => ({
+  state: (): AuthState => ({
     user: null,
     isAuthenticated: false,
+    isInitialized: false,
   }),
+
   actions: {
     async initializeAuth() {
       try {
@@ -23,7 +52,8 @@ export const useAuthStore = defineStore("auth", {
         this.isInitialized = true;
       }
     },
-    async register(credentials, inviterId) {
+
+    async register(credentials: RegisterCredentials, inviterId?: string) {
       try {
         const url = getEndpoint({ path: "auth.register" });
 
@@ -37,37 +67,30 @@ export const useAuthStore = defineStore("auth", {
         const data = await response.json();
 
         if (response.status !== 201) {
-          // Handle validation errors specifically
           if (typeof data === "object" && data !== null) {
-            const errors = Object.values(data);
+            const errors = Object.values(data as ApiErrorResponse);
             if (errors.length > 0 && errors[0].length > 0) {
-              // Extract the first error message from the first property with an error
               throw new Error(errors[0][0]);
             }
           }
-
-          // Fallback error message if the structure wasn't as expected
           throw new Error("Registration failed due to an unexpected error.");
-
-          // Optionally, auto-login after successful registration
-          // await this.login(credentials);
         }
       } catch (error) {
         console.error("Registration error:", error);
         throw error;
       }
     },
-    async login(credentials) {
+
+    async login(credentials: LoginCredentials) {
       try {
         const url = getEndpoint({ path: "auth.login" });
-        const response = await $fetch(url, {
+        const response = await $fetch<TokenResponse>(url, {
           method: "POST",
           body: JSON.stringify(credentials),
         });
 
         const { accessToken, refreshToken } = useAuthCookies();
 
-        // Store tokens in cookies
         accessToken.value = response.access;
         refreshToken.value = response.refresh;
 
@@ -79,17 +102,16 @@ export const useAuthStore = defineStore("auth", {
         throw error;
       }
     },
+
     logout() {
       const { accessToken, refreshToken } = useAuthCookies();
-
-      // Clear cookies
       accessToken.value = null;
       refreshToken.value = null;
       this.user = null;
       this.isAuthenticated = false;
     },
 
-    async fetchUser() {
+    async fetchUser(): Promise<User | false> {
       try {
         const url = getEndpoint({ path: "auth.getUser" });
         const response = await this.authedGet(url);
@@ -103,7 +125,8 @@ export const useAuthStore = defineStore("auth", {
         return false;
       }
     },
-    async retrieveValidToken() {
+
+    async retrieveValidToken(): Promise<string | null> {
       const { accessToken, refreshToken } = useAuthCookies();
 
       if (!accessToken.value) {
@@ -111,12 +134,10 @@ export const useAuthStore = defineStore("auth", {
         return null;
       }
 
-      const user = jwtDecode(accessToken.value);
+      const user = jwtDecode<JWTPayload>(accessToken.value);
       const isExpired = dayjs.unix(user.exp).diff(dayjs(), "minute") < 1;
 
-      // Check if token is still valid
       if (isExpired) {
-        // Token has expired
         try {
           const newTokens = await this.refreshToken();
           if (newTokens) {
@@ -132,13 +153,14 @@ export const useAuthStore = defineStore("auth", {
 
       return accessToken.value;
     },
-    async refreshToken() {
+
+    async refreshToken(): Promise<TokenResponse | null> {
       const { refreshToken } = useAuthCookies();
       if (!refreshToken.value) return null;
 
       try {
         const url = getEndpoint({ path: "auth.refreshToken" });
-        const response = await $fetch(url, {
+        const response = await $fetch<TokenResponse>(url, {
           method: "POST",
           body: JSON.stringify({ refresh: refreshToken.value }),
         });
@@ -149,7 +171,11 @@ export const useAuthStore = defineStore("auth", {
         return null;
       }
     },
-    async authedRequest(url, originalConfig = {}) {
+
+    async authedRequest(
+      url: string,
+      originalConfig: ExtendedRequestInit = {}
+    ): Promise<Response> {
       const config = { ...originalConfig };
       const accessToken = await this.retrieveValidToken();
 
@@ -162,7 +188,9 @@ export const useAuthStore = defineStore("auth", {
       if (!config.headers) {
         config.headers = {};
       }
-      config.headers["Authorization"] = `Bearer ${accessToken}`;
+      (config.headers as Record<string, string>)[
+        "Authorization"
+      ] = `Bearer ${accessToken}`;
 
       if (config.data) {
         config.body = config.data;
@@ -176,23 +204,33 @@ export const useAuthStore = defineStore("auth", {
         return Promise.reject(error);
       }
     },
-    async makeRequest(method, url, data = {}, config = {}) {
+
+    async makeRequest(
+      method: string,
+      url: string,
+      data: any = {},
+      config: ExtendedRequestInit = {}
+    ): Promise<Response> {
       config.method = method;
       if (data && Object.keys(data).length > 0) {
         config.data = data;
       }
       return await this.authedRequest(url, config);
     },
-    async authedPost(url, data, config = {}) {
+
+    async authedPost(url: string, data: any, config: ExtendedRequestInit = {}) {
       return this.makeRequest("POST", url, JSON.stringify(data), config);
     },
-    async authedPut(url, data, config = {}) {
+
+    async authedPut(url: string, data: any, config: ExtendedRequestInit = {}) {
       return this.makeRequest("PUT", url, JSON.stringify(data), config);
     },
-    async authedGet(url, config = {}) {
+
+    async authedGet(url: string, config: ExtendedRequestInit = {}) {
       return this.makeRequest("GET", url, null, config);
     },
-    async authedDelete(url, config = {}) {
+
+    async authedDelete(url: string, config: ExtendedRequestInit = {}) {
       return this.makeRequest("DELETE", url, null, config);
     },
   },

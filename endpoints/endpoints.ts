@@ -1,10 +1,19 @@
 import { authEndpoints } from "./auth";
+import {
+  type EndpointsStructure,
+  type GetEndpointParams,
+  type RecursiveRecord,
+} from "./types";
 
-export const endpoints = {
+export const endpoints: EndpointsStructure = {
   auth: authEndpoints,
 };
 
-export function getEndpoint({ path, params = {}, queryParams = {} }) {
+export function getEndpoint({
+  path,
+  params = {},
+  queryParams = {},
+}: GetEndpointParams): string {
   /**
    * Generates a full URL for a given API endpoint.
    *
@@ -45,21 +54,33 @@ export function getEndpoint({ path, params = {}, queryParams = {} }) {
   const baseUrl = config.public.apiUrl;
 
   const parts = path.split(".");
-  let current = endpoints;
+  let current: string | RecursiveRecord =
+    endpoints as unknown as RecursiveRecord;
 
   for (const part of parts) {
-    if (current[part] === undefined) {
+    if (typeof current !== "object") {
+      throw new Error(`Invalid endpoint path: ${path}`);
+    }
+
+    const value: string | RecursiveRecord = current[part];
+    if (value === undefined) {
       throw new Error(`Endpoint not found: ${path}`);
     }
-    current = current[part];
+
+    // Here's the key change: we need to handle both possible types
+    if (typeof value === "string") {
+      current = value;
+    } else {
+      current = value as RecursiveRecord;
+    }
   }
 
   if (typeof current !== "string") {
-    throw new Error(`Invalid endpoint: ${path}`);
+    throw new Error(`Invalid endpoint: ${path} (not a string)`);
   }
 
-  // Replace dynamic parts in the endpoint
   let endpoint = current;
+
   for (const [key, value] of Object.entries(params)) {
     const placeholder = `<${key}>`;
     if (endpoint.includes(placeholder)) {

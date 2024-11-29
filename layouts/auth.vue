@@ -10,17 +10,19 @@
     </div>
   </div>
 </template>
-<script setup>
-// import { initializeNotifications } from "~/helpers/pushHelpers";
+<script setup lang="ts">
+import type { Router } from "vue-router";
 
 const authStore = useAuthStore();
 const { isAuthenticated } = storeToRefs(authStore);
+const router: Router = useRouter();
 
-onMounted(async () => {
-  if (!isAuthenticated.value) {
-    router.push("/");
-  } else {
-    // await initializeNotifications();
+onMounted(async (): Promise<void> => {
+  if (!authStore.isInitialized) {
+    await authStore.initializeAuth();
+  }
+  if (isAuthenticated.value) {
+    await router.push("/");
   }
 });
 </script>

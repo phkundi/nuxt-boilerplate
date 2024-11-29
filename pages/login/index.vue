@@ -39,7 +39,7 @@
                     name="email"
                     type="email"
                     autocomplete="email"
-                    required=""
+                    required="true"
                     class="block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
                     placeholder="johndoe@example.com"
                     v-model="credentials.email"
@@ -59,7 +59,7 @@
                     name="password"
                     type="password"
                     autocomplete="current-password"
-                    required=""
+                    required="true"
                     class="block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
                     placeholder="********"
                     v-model="credentials.password"
@@ -107,12 +107,8 @@
   </NuxtLayout>
 </template>
 
-<script setup>
-import { useRouter } from "vue-router";
-import { useAuthStore } from "~/store/auth.js";
-import { storeToRefs } from "pinia";
-import { watch, onMounted } from "vue";
-import { useRoute } from "vue-router";
+<script setup lang="ts">
+import { type LoginCredentials } from "~/types/auth";
 
 definePageMeta({
   layout: "auth",
@@ -123,27 +119,31 @@ const authStore = useAuthStore();
 const { isAuthenticated } = storeToRefs(authStore);
 const { login } = authStore;
 
-const error = ref(null);
+const error = ref<string | null>(null);
 const router = useRouter();
 
-const credentials = reactive({
+const credentials = reactive<LoginCredentials>({
   email: "",
   password: "",
 });
 
-const handleSubmit = async () => {
+const handleSubmit = async (): Promise<void> => {
   try {
     await login(credentials);
 
     router.push("/");
   } catch (err) {
-    error.value = err.message;
+    if (err instanceof Error) {
+      error.value = err.message;
+    } else {
+      error.value = "An unknown error occurred";
+    }
   }
 };
 
 watch(
   isAuthenticated,
-  (newValue) => {
+  (newValue: boolean) => {
     if (newValue) {
       router.push("/");
     }
