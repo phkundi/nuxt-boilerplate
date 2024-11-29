@@ -1,13 +1,11 @@
-import { type AuthEndpoints } from "./auth";
+export interface Endpoint {
+  url: string;
+  requireAuth: boolean;
+}
 
 export type RecursiveRecord = {
   [key: string]: string | RecursiveRecord;
 };
-
-export interface EndpointsStructure {
-  auth: AuthEndpoints;
-  // Add other endpoint categories here as needed
-}
 
 export interface GetEndpointParams {
   path: string;
