@@ -6,6 +6,9 @@
     <UtilityLoadingSpinner color="grey" />
   </div>
   <NuxtPage v-else />
+
+  <UtilityToast />
+  <UtilityConfirmationDialog />
 </template>
 <script setup lang="ts">
 const authStore = useAuthStore();

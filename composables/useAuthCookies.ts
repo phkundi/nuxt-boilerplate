@@ -1,4 +1,4 @@
-import { useCookie, type CookieRef } from "#app";
+import { useCookie } from "#app";
 
 // Define cookie options type
 interface CookieOptions {
@@ -8,27 +8,59 @@ interface CookieOptions {
   path: string;
 }
 
-// Define cookie options
-const cookieOptions: CookieOptions = {
-  maxAge: 60 * 60 * 24 * 14, // 2 weeks
+// Cookie durations (in seconds)
+const DURATIONS = {
+  SHORT: {
+    ACCESS: 60 * 15, // 15 minutes
+    REFRESH: 60 * 60 * 24, // 1 day
+  },
+  LONG: {
+    ACCESS: 60 * 15, // 15 minutes
+    REFRESH: 60 * 60 * 24 * 14, // 14 days
+  },
+};
+
+// Base cookie options
+const cookieOptions: Omit<CookieOptions, "maxAge"> = {
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax",
   path: "/",
 };
 
 export const useAuthCookies = () => {
-  const accessToken: CookieRef<string | null> = useCookie("access_token", {
-    ...cookieOptions,
-    maxAge: 60 * 60 * 24 * 7, // 1 week for access token
-  });
+  const getTokenCookie = (name: string, duration: number) =>
+    useCookie<string | null>(name, {
+      ...cookieOptions,
+      maxAge: duration,
+    });
 
-  const refreshToken: CookieRef<string | null> = useCookie(
-    "refresh_token",
-    cookieOptions
-  );
+  const setToken = (
+    name: string,
+    value: string | null,
+    remember: boolean = false
+  ) => {
+    const duration = remember
+      ? name === "access_token"
+        ? DURATIONS.LONG.ACCESS
+        : DURATIONS.LONG.REFRESH
+      : name === "access_token"
+      ? DURATIONS.SHORT.ACCESS
+      : DURATIONS.SHORT.REFRESH;
+
+    const cookie = getTokenCookie(name, duration);
+    cookie.value = value;
+  };
 
   return {
-    accessToken,
-    refreshToken,
+    setAccessToken: (token: string | null, remember: boolean = false) =>
+      setToken("access_token", token, remember),
+
+    setRefreshToken: (token: string | null, remember: boolean = false) =>
+      setToken("refresh_token", token, remember),
+
+    getAccessToken: () =>
+      getTokenCookie("access_token", DURATIONS.SHORT.ACCESS).value,
+    getRefreshToken: () =>
+      getTokenCookie("refresh_token", DURATIONS.SHORT.REFRESH).value,
   };
 };

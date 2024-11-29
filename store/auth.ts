@@ -7,6 +7,7 @@ import {
   type AuthState,
   type LoginCredentials,
   type RegisterCredentials,
+  type ResetPasswordCredentials,
   type User,
 } from "~/types/auth";
 
@@ -27,17 +28,12 @@ interface ExtendedRequestInit extends RequestInit {
   data?: any;
 }
 
-interface ApiErrorResponse {
-  [key: string]: string[]; // Each field can have multiple error messages
-}
-
 export const useAuthStore = defineStore("auth", {
   state: (): AuthState => ({
     user: null,
     isAuthenticated: false,
     isInitialized: false,
   }),
-
   actions: {
     async initializeAuth() {
       try {
@@ -52,11 +48,12 @@ export const useAuthStore = defineStore("auth", {
         this.isInitialized = true;
       }
     },
-
-    async register(credentials: RegisterCredentials, inviterId?: string) {
+    async register(
+      credentials: RegisterCredentials,
+      inviterId?: string
+    ): Promise<User> {
       try {
         const url = getEndpoint({ path: "auth.register" });
-
         const response = await fetch(url, {
           method: "POST",
           headers: {
@@ -67,21 +64,26 @@ export const useAuthStore = defineStore("auth", {
         const data = await response.json();
 
         if (response.status !== 201) {
-          if (typeof data === "object" && data !== null) {
-            const errors = Object.values(data as ApiErrorResponse);
-            if (errors.length > 0 && errors[0].length > 0) {
-              throw new Error(errors[0][0]);
-            }
-          }
-          throw new Error("Registration failed due to an unexpected error.");
+          throw {
+            status: response.status,
+            data,
+          };
         }
+
+        const userData = await this.login({
+          email: credentials.email,
+          password: credentials.password,
+        });
+        return userData;
       } catch (error) {
         console.error("Registration error:", error);
         throw error;
       }
     },
-
-    async login(credentials: LoginCredentials) {
+    async login(
+      credentials: LoginCredentials,
+      remember: boolean = false
+    ): Promise<User> {
       try {
         const url = getEndpoint({ path: "auth.login" });
         const response = await $fetch<TokenResponse>(url, {
@@ -89,29 +91,77 @@ export const useAuthStore = defineStore("auth", {
           body: JSON.stringify(credentials),
         });
 
-        const { accessToken, refreshToken } = useAuthCookies();
+        const { setAccessToken, setRefreshToken } = useAuthCookies();
 
-        accessToken.value = response.access;
-        refreshToken.value = response.refresh;
+        setAccessToken(response.access, remember);
+        setRefreshToken(response.refresh, remember);
 
         this.isAuthenticated = true;
 
-        await this.fetchUser();
+        // Add a small delay to ensure cookies are set
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        const userData = await this.fetchUser();
+        return userData;
       } catch (error) {
         console.error("Login error:", error);
         throw error;
       }
     },
-
     logout() {
-      const { accessToken, refreshToken } = useAuthCookies();
-      accessToken.value = null;
-      refreshToken.value = null;
+      const { setAccessToken, setRefreshToken } = useAuthCookies();
+      setAccessToken(null);
+      setRefreshToken(null);
       this.user = null;
       this.isAuthenticated = false;
     },
+    async forgotPassword(email: string) {
+      try {
+        const url = getEndpoint({ path: "auth.forgotPassword" });
+        const response = await fetch(url, {
+          method: "POST",
+          body: JSON.stringify({ email }),
+          headers: { "Content-Type": "application/json" },
+        });
 
-    async fetchUser(): Promise<User | false> {
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message);
+        }
+      } catch (error) {
+        console.error("Forgot password error:", error);
+        throw error;
+      }
+    },
+    async resetPassword(
+      credentials: ResetPasswordCredentials,
+      user_id: string,
+      token: string
+    ) {
+      try {
+        const url = getEndpoint({
+          path: "auth.resetPassword",
+          params: { user_id, token },
+        });
+        const response = await fetch(url, {
+          method: "POST",
+          body: JSON.stringify(credentials),
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message);
+        }
+
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error("Reset password error:", error);
+        throw error;
+      }
+    },
+    async fetchUser(): Promise<User> {
       try {
         const url = getEndpoint({ path: "auth.getUser" });
         const response = await this.authedGet(url);
@@ -119,30 +169,32 @@ export const useAuthStore = defineStore("auth", {
 
         this.user = data;
         this.isAuthenticated = true;
+
         return data;
       } catch (error) {
         console.error("Fetch user error:", error);
-        return false;
+        throw error;
       }
     },
-
     async retrieveValidToken(): Promise<string | null> {
-      const { accessToken, refreshToken } = useAuthCookies();
+      const { getAccessToken, setAccessToken, setRefreshToken } =
+        useAuthCookies();
 
-      if (!accessToken.value) {
+      const token = getAccessToken();
+      if (!token) {
         console.log("No access token found");
         return null;
       }
 
-      const user = jwtDecode<JWTPayload>(accessToken.value);
-      const isExpired = dayjs.unix(user.exp).diff(dayjs(), "minute") < 1;
+      const user = jwtDecode<JWTPayload>(token);
+      const isExpired = dayjs.unix(user.exp).diff(dayjs(), "minute") < 5;
 
       if (isExpired) {
         try {
           const newTokens = await this.refreshToken();
           if (newTokens) {
-            accessToken.value = newTokens.access;
-            refreshToken.value = newTokens.refresh;
+            setAccessToken(newTokens.access);
+            setRefreshToken(newTokens.refresh);
             return newTokens.access;
           }
         } catch (err) {
@@ -151,19 +203,20 @@ export const useAuthStore = defineStore("auth", {
         }
       }
 
-      return accessToken.value;
+      return token;
     },
-
     async refreshToken(): Promise<TokenResponse | null> {
-      const { refreshToken } = useAuthCookies();
-      if (!refreshToken.value) return null;
+      const { getRefreshToken, setRefreshToken } = useAuthCookies();
+      const refreshToken = getRefreshToken();
+      if (!refreshToken) return null;
 
       try {
         const url = getEndpoint({ path: "auth.refreshToken" });
         const response = await $fetch<TokenResponse>(url, {
           method: "POST",
-          body: JSON.stringify({ refresh: refreshToken.value }),
+          body: JSON.stringify({ refresh: refreshToken }),
         });
+        setRefreshToken(response.refresh);
         return response;
       } catch (error) {
         console.error("Failed to refresh token:", error);
@@ -219,11 +272,19 @@ export const useAuthStore = defineStore("auth", {
     },
 
     async authedPost(url: string, data: any, config: ExtendedRequestInit = {}) {
-      return this.makeRequest("POST", url, JSON.stringify(data), config);
+      return this.makeRequest("POST", url, data, config);
     },
 
     async authedPut(url: string, data: any, config: ExtendedRequestInit = {}) {
-      return this.makeRequest("PUT", url, JSON.stringify(data), config);
+      return this.makeRequest("PUT", url, data, config);
+    },
+
+    async authedPatch(
+      url: string,
+      data: any,
+      config: ExtendedRequestInit = {}
+    ) {
+      return this.makeRequest("PATCH", url, data, config);
     },
 
     async authedGet(url: string, config: ExtendedRequestInit = {}) {

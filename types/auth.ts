@@ -24,3 +24,8 @@ export interface AuthState {
   isAuthenticated: boolean;
   isInitialized: boolean;
 }
+
+export interface ResetPasswordCredentials {
+  password1: string;
+  password2: string;
+}
