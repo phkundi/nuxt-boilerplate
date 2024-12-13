@@ -1,28 +1,23 @@
 <template>
-  <div class="flex min-h-full flex-1">
-    <slot />
-    <div class="relative hidden w-0 flex-1 lg:block">
-      <img
-        class="absolute inset-0 h-full w-full object-cover"
-        src="https://images.unsplash.com/photo-1496917756835-20cb06e75b4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1908&q=80"
-        alt=""
-      />
+  <div class="h-screen flex justify-center items-center bg-slate-50">
+    <div class="max-w-4xl w-full flex flex-col items-center">
+      <span class="text-2xl font-bold text-primary">App Name</span>
+      <!-- <img src="/logo/black-text.png" alt="App Name" class="h-8" /> -->
+      <slot />
     </div>
   </div>
 </template>
-<script setup lang="ts">
-import type { Router } from "vue-router";
-
+<script setup>
 const authStore = useAuthStore();
 const { isAuthenticated } = storeToRefs(authStore);
-const router: Router = useRouter();
+const router = useRouter();
 
-onMounted(async (): Promise<void> => {
+onMounted(async () => {
   if (!authStore.isInitialized) {
     await authStore.initializeAuth();
   }
   if (isAuthenticated.value) {
-    await router.push("/");
+    router.push("/");
   }
 });
 </script>

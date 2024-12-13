@@ -28,18 +28,39 @@ interface ExtendedRequestInit extends RequestInit {
   data?: any;
 }
 
+interface AuthStoreState extends AuthState {
+  _refreshInterval: NodeJS.Timeout | null;
+}
+
 export const useAuthStore = defineStore("auth", {
-  state: (): AuthState => ({
+  state: (): AuthStoreState => ({
     user: null,
     isAuthenticated: false,
     isInitialized: false,
+    _refreshInterval: null,
   }),
   actions: {
     async initializeAuth() {
       try {
-        const token = await this.retrieveValidToken();
-        if (token) {
+        const { getAccessToken, getRefreshToken } = useAuthCookies();
+        const accessToken = getAccessToken();
+        const refreshToken = getRefreshToken();
+
+        if (!accessToken && refreshToken) {
+          const newTokens = await this.refreshToken();
+          if (newTokens) {
+            await this.fetchUser();
+            await this.startTokenRefreshInterval();
+            return;
+          }
+        }
+
+        if (accessToken) {
           await this.fetchUser();
+          await this.startTokenRefreshInterval();
+        } else {
+          console.debug("No valid tokens found, logging out...");
+          this.logout();
         }
       } catch (error) {
         console.error("Auth initialization error:", error);
@@ -80,10 +101,7 @@ export const useAuthStore = defineStore("auth", {
         throw error;
       }
     },
-    async login(
-      credentials: LoginCredentials,
-      remember: boolean = false
-    ): Promise<User> {
+    async login(credentials: LoginCredentials): Promise<User> {
       try {
         const url = getEndpoint({ path: "auth.login" });
         const response = await $fetch<TokenResponse>(url, {
@@ -93,8 +111,8 @@ export const useAuthStore = defineStore("auth", {
 
         const { setAccessToken, setRefreshToken } = useAuthCookies();
 
-        setAccessToken(response.access, remember);
-        setRefreshToken(response.refresh, remember);
+        setAccessToken(response.access);
+        setRefreshToken(response.refresh);
 
         this.isAuthenticated = true;
 
@@ -114,6 +132,12 @@ export const useAuthStore = defineStore("auth", {
       setRefreshToken(null);
       this.user = null;
       this.isAuthenticated = false;
+
+      // Clear the refresh interval
+      if (this._refreshInterval) {
+        clearInterval(this._refreshInterval);
+        this._refreshInterval = null;
+      }
     },
     async forgotPassword(email: string) {
       try {
@@ -176,20 +200,55 @@ export const useAuthStore = defineStore("auth", {
         throw error;
       }
     },
+    async startTokenRefreshInterval() {
+      // Clear any existing interval
+      if (this._refreshInterval) {
+        clearInterval(this._refreshInterval);
+      }
+
+      // Set new interval - check every 5 minutes
+      this._refreshInterval = setInterval(async () => {
+        if (this.isAuthenticated) {
+          try {
+            await this.retrieveValidToken();
+          } catch (error) {
+            console.error("Token refresh failed:", error);
+          }
+        }
+      }, 5 * 60 * 1000); // 5 minutes
+    },
     async retrieveValidToken(): Promise<string | null> {
-      const { getAccessToken, setAccessToken, setRefreshToken } =
-        useAuthCookies();
+      const {
+        getAccessToken,
+        getRefreshToken,
+        setAccessToken,
+        setRefreshToken,
+      } = useAuthCookies();
 
       const token = getAccessToken();
+
       if (!token) {
-        console.log("No access token found");
+        const refreshToken = getRefreshToken();
+
+        if (refreshToken) {
+          try {
+            const newTokens = await this.refreshToken();
+            if (newTokens) {
+              setAccessToken(newTokens.access);
+              setRefreshToken(newTokens.refresh);
+              return newTokens.access;
+            }
+          } catch (err) {
+            console.error("Error refreshing token:", err);
+          }
+        }
         return null;
       }
 
       const user = jwtDecode<JWTPayload>(token);
-      const isExpired = dayjs.unix(user.exp).diff(dayjs(), "minute") < 5;
+      const isExpiringSoon = dayjs.unix(user.exp).diff(dayjs(), "minute") < 5;
 
-      if (isExpired) {
+      if (isExpiringSoon) {
         try {
           const newTokens = await this.refreshToken();
           if (newTokens) {
@@ -198,8 +257,7 @@ export const useAuthStore = defineStore("auth", {
             return newTokens.access;
           }
         } catch (err) {
-          console.error("Error refreshing token", err);
-          return null;
+          console.error("Error refreshing token:", err);
         }
       }
 
@@ -208,7 +266,10 @@ export const useAuthStore = defineStore("auth", {
     async refreshToken(): Promise<TokenResponse | null> {
       const { getRefreshToken, setRefreshToken } = useAuthCookies();
       const refreshToken = getRefreshToken();
-      if (!refreshToken) return null;
+      if (!refreshToken) {
+        console.log("No refresh token found");
+        return null;
+      }
 
       try {
         const url = getEndpoint({ path: "auth.refreshToken" });

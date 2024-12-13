@@ -1,11 +1,7 @@
 import { authEndpoints } from "./auth";
-import {
-  type EndpointsStructure,
-  type GetEndpointParams,
-  type RecursiveRecord,
-} from "./types";
+import { type GetEndpointParams, type RecursiveRecord } from "./types";
 
-export const endpoints: EndpointsStructure = {
+export const endpoints: Record<string, Record<string, Endpoint>> = {
   auth: authEndpoints,
 };
 

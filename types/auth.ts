@@ -15,8 +15,8 @@ export interface LoginCredentials {
 
 export interface RegisterCredentials extends LoginCredentials {
   first_name: string;
-  birthday: string;
   password2: string;
+  accept_terms: boolean;
 }
 
 export interface AuthState {

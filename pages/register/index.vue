@@ -1,312 +1,128 @@
 <template>
   <NuxtLayout>
-    <div
-      class="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24"
-    >
-      <div class="mx-auto w-full max-w-sm lg:w-96">
-        <div>
-          <img
-            class="h-10 w-auto"
-            src="https://tailwindui.com/img/logos/mark.svg?color=blue&shade=600"
-            alt="Your Company"
+    <h1 class="text-lg font-medium text-center my-2 text-muted">
+      Access your account
+    </h1>
+    <div class="w-full px-4 lg:px-0 mt-4 sm:mx-auto sm:w-full sm:max-w-[480px]">
+      <div class="lg:bg-white px-6 py-10 lg:shadow sm:rounded-lg sm:px-12">
+        <form class="space-y-6" @submit.prevent="handleSubmit">
+          <UtilityFormInput
+            id="first_name"
+            label="First Name"
+            type="text"
+            placeholder="John"
+            v-model="credentials.first_name"
+            :validationState="validationState.first_name"
           />
-          <h2
-            class="mt-8 text-2xl font-bold leading-9 tracking-tight text-gray-900"
-          >
-            Sign Up
-          </h2>
-          <p class="mt-2 text-sm leading-6 text-gray-500">
-            Already have an account?
-            {{ " " }}
-            <a
-              href="/login"
-              class="font-semibold text-blue-600 hover:text-blue-500"
-              >Login</a
-            >
-          </p>
-        </div>
+          <UtilityFormInput
+            id="email"
+            label="Email address"
+            type="email"
+            placeholder="office@example.com"
+            v-model="credentials.email"
+            :validationState="validationState.email"
+          />
+          <UtilityFormInput
+            id="password"
+            label="Password"
+            type="password"
+            placeholder="********"
+            v-model="credentials.password"
+            :validationState="validationState.password"
+          />
+          <UtilityFormInput
+            id="password2"
+            label="Repeat Password"
+            type="password"
+            placeholder="********"
+            v-model="credentials.password2"
+            :validationState="validationState.password2"
+          />
 
-        <div class="mt-10">
-          <div>
-            <form @submit.prevent="handleSubmit" class="space-y-6">
-              <div>
-                <label
-                  for="first_name"
-                  class="block text-sm font-medium leading-6 text-gray-900"
-                  >First Name</label
-                >
-                <div class="mt-2">
-                  <input
-                    id="first_name"
-                    name="first_name"
-                    type="text"
-                    required="true"
-                    class="block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-                    v-model="credentials.first_name"
-                    placeholder="John"
-                  />
-                  <span
-                    class="text-xs text-red-400"
-                    v-if="!credentialValidations.first_name.isValid"
-                    >{{ credentialValidations.first_name.message }}</span
-                  >
-                </div>
-              </div>
-
-              <div>
-                <label
-                  for="email"
-                  class="block text-sm font-medium leading-6 text-gray-900"
-                  >Email address</label
-                >
-                <div class="mt-2">
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autocomplete="email"
-                    required="true"
-                    class="block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-                    v-model="credentials.email"
-                    placeholder="john@doe.com"
-                  />
-                  <span
-                    class="text-xs text-red-400"
-                    v-if="!credentialValidations.email.isValid"
-                    >{{ credentialValidations.email.message }}</span
-                  >
-                </div>
-              </div>
-
-              <div>
-                <label
-                  for="password"
-                  class="block text-sm font-medium leading-6 text-gray-900"
-                  >Password</label
-                >
-                <div class="mt-2">
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autocomplete="current-password"
-                    required="true"
-                    class="block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-                    v-model="credentials.password"
-                    placeholder="********"
-                  />
-                  <span
-                    class="text-xs text-red-400"
-                    v-if="!credentialValidations.password.isValid"
-                    >{{ credentialValidations.password.message }}</span
-                  >
-                </div>
-              </div>
-              <div>
-                <label
-                  for="password2"
-                  class="block text-sm font-medium leading-6 text-gray-900"
-                  >Repeat Password</label
-                >
-                <div class="mt-2">
-                  <input
-                    id="password2"
-                    name="password2"
-                    type="password"
-                    required="true"
-                    class="block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-                    v-model="credentials.password2"
-                    placeholder="********"
-                  />
-                  <span
-                    class="text-xs text-red-400"
-                    v-if="!credentialValidations.password2.isValid"
-                    >{{ credentialValidations.password2.message }}</span
-                  >
-                </div>
-              </div>
-              <div>
-                <label
-                  for="password"
-                  class="block text-sm font-medium leading-6 text-gray-900"
-                  >Birthday</label
-                >
-                <div class="mt-2">
-                  <input
-                    id="birthday"
-                    name="birthday"
-                    type="date"
-                    required="true"
-                    class="block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-                    v-model="credentials.birthday"
-                    placeholder="2000-01-01"
-                  />
-                  <span
-                    class="text-xs text-red-400"
-                    v-if="!credentialValidations.birthday.isValid"
-                    >{{ credentialValidations.birthday.message }}</span
-                  >
-                </div>
-              </div>
-
-              <div>
-                <button
-                  type="submit"
-                  :disabled="loading || disableSubmit"
-                  class="flex w-full justify-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-                  :class="{ 'opacity-50': loading || disableSubmit }"
-                >
-                  {{ loading ? "Loading..." : "Sign Up" }}
-                </button>
-              </div>
-            </form>
+          <div class="relative flex items-start">
+            <div class="flex h-6 items-center">
+              <input
+                id="terms"
+                aria-describedby="terms-description"
+                name="terms"
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                v-model="credentials.accept_terms"
+              />
+            </div>
+            <div class="ml-3 text-sm/6">
+              <label for="terms" class="font-medium text-primary"
+                >Accept Terms & Conditions</label
+              >
+              <p id="comments-description" class="text-muted text-xs">
+                Please read and accept our terms and conditions to continue.
+              </p>
+              <span
+                class="text-xs text-error"
+                v-if="!validationState.accept_terms.isValid"
+                >{{ validationState.accept_terms.message }}</span
+              >
+            </div>
           </div>
-        </div>
+
+          <button type="submit" class="btn btn-primary w-full">Register</button>
+        </form>
       </div>
+
+      <p class="mt-10 text-center text-sm/6 text-muted">
+        Already have an account?
+        {{ " " }}
+        <NuxtLink
+          to="/login"
+          class="font-semibold text-primary hover:text-primary-hover"
+          >Login</NuxtLink
+        >
+      </p>
     </div>
   </NuxtLayout>
 </template>
 <script setup lang="ts">
 import { type RegisterCredentials } from "~/types/auth";
+import { registerFormValidation } from "~/validators/auth";
+import { useToast } from "~/composables/useToast";
+import { useFormValidation } from "~/composables/useFormValidation";
 
 const { register } = useAuthStore();
+const { success: successToast, error: errorToast } = useToast();
 
 definePageMeta({
   layout: "auth",
 });
 
-const error = ref<string | null>(null);
 const loading = ref(false);
 const credentials = reactive<RegisterCredentials>({
   first_name: "",
   email: "",
   password: "",
   password2: "",
-  birthday: "",
+  accept_terms: false,
 });
 
-const credentialValidations = reactive({
-  email: { isValid: true, message: "" },
-  first_name: { isValid: true, message: "" },
-  birthday: { isValid: true, message: "" },
-  password: { isValid: true, message: "" },
-  password2: { isValid: true, message: "" },
-});
-
-const checkBirthday = (): boolean => {
-  const birthday = new Date(credentials.birthday);
-  const today = new Date();
-  const age = today.getFullYear() - birthday.getFullYear();
-  return age >= 18;
-};
-
-const validateEmail = (): void => {
-  if (!credentials.email) {
-    credentialValidations.email.isValid = false;
-    credentialValidations.email.message = "Email is required.";
-  } else {
-    credentialValidations.email.isValid = true;
-    credentialValidations.email.message = "";
-  }
-};
-
-const validateFirstName = (): void => {
-  if (!credentials.first_name) {
-    credentialValidations.first_name.isValid = false;
-    credentialValidations.first_name.message = "First name is required.";
-  } else {
-    credentialValidations.first_name.isValid = true;
-    credentialValidations.first_name.message = "";
-  }
-};
-
-const validatePassword = (): void => {
-  if (!credentials.password) {
-    credentialValidations.password.isValid = false;
-    credentialValidations.password.message = "Password is required.";
-  } else if (credentials.password.length < 6) {
-    credentialValidations.password.isValid = false;
-    credentialValidations.password.message =
-      "Password must be at least 6 characters.";
-  } else {
-    credentialValidations.password.isValid = true;
-    credentialValidations.password.message = "";
-  }
-  validateRepeatPassword(); // Ensure repeat password is re-validated when password changes
-};
-
-const validateRepeatPassword = (): void => {
-  if (!credentials.password2) {
-    credentialValidations.password2.isValid = false;
-    credentialValidations.password2.message = "Repeat password is required.";
-  } else if (credentials.password2 !== credentials.password) {
-    credentialValidations.password2.isValid = false;
-    credentialValidations.password2.message = "Passwords do not match.";
-  } else {
-    credentialValidations.password2.isValid = true;
-    credentialValidations.password2.message = "";
-  }
-};
-
-const validateBirthday = (): void => {
-  if (!credentials.birthday) {
-    credentialValidations.birthday.isValid = false;
-    credentialValidations.birthday.message = "Birthday is required.";
-  } else {
-    if (!checkBirthday()) {
-      credentialValidations.birthday.isValid = false;
-      credentialValidations.birthday.message =
-        "You must be at least 18 years old to register.";
-    } else {
-      credentialValidations.birthday.isValid = true;
-      credentialValidations.birthday.message = "";
-    }
-  }
-};
-
-const isInvalidForm = computed((): boolean => {
-  return (
-    !credentialValidations.email.isValid ||
-    !credentialValidations.first_name.isValid ||
-    !credentialValidations.password.isValid ||
-    !credentialValidations.password2.isValid ||
-    !credentialValidations.birthday.isValid
-  );
-});
-
-const disableSubmit = computed((): boolean => {
-  return (
-    !credentials.email ||
-    !credentials.first_name ||
-    !credentials.password ||
-    !credentials.password2 ||
-    !credentials.birthday
-  );
-});
+const { validationState, validateForm, handleApiErrors } =
+  useFormValidation(credentials);
 
 const handleSubmit = async (): Promise<void> => {
   loading.value = true;
-  error.value = null;
 
-  validateEmail();
-  validateFirstName();
-  validatePassword();
-  validateRepeatPassword();
-  validateBirthday();
-
-  if (isInvalidForm.value) {
+  if (!validateForm(registerFormValidation)) {
     loading.value = false;
     return;
   }
 
   try {
     await register(credentials);
-    alert("Registration successful");
-  } catch (err) {
-    if (err instanceof Error) {
-      error.value = err.message;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    successToast("Registration successful");
+  } catch (err: any) {
+    if (err.status === 400 && err.data) {
+      handleApiErrors(err.data);
     } else {
-      error.value = "An unknown error occurred";
+      errorToast("An unknown error occurred", "Registration Failed");
     }
   } finally {
     loading.value = false;

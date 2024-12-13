@@ -2,7 +2,10 @@
   <div>
     <label
       :for="id"
-      class="block text-sm font-medium leading-6 text-primary-text"
+      :class="[
+        'block text-sm font-medium leading-6 text-primary-text',
+        hideLabel ? 'sr-only' : '',
+      ]"
     >
       {{ label }}
       <span v-if="optional" class="text-xs text-gray-400">(optional)</span>
@@ -50,6 +53,10 @@ interface ValidationState {
 defineProps({
   id: String,
   label: String,
+  hideLabel: {
+    type: Boolean,
+    default: false,
+  },
   type: {
     type: String,
     default: "text",

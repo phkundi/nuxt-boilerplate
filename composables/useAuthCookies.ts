@@ -6,18 +6,13 @@ interface CookieOptions {
   secure: boolean;
   sameSite: "lax" | "strict" | "none";
   path: string;
+  httpOnly?: boolean;
 }
 
 // Cookie durations (in seconds)
 const DURATIONS = {
-  SHORT: {
-    ACCESS: 60 * 15, // 15 minutes
-    REFRESH: 60 * 60 * 24, // 1 day
-  },
-  LONG: {
-    ACCESS: 60 * 15, // 15 minutes
-    REFRESH: 60 * 60 * 24 * 14, // 14 days
-  },
+  ACCESS: 60 * 30, // 30 minutes (match backend)
+  REFRESH: 60 * 60 * 24 * 14, // 14 days
 };
 
 // Base cookie options
@@ -25,42 +20,33 @@ const cookieOptions: Omit<CookieOptions, "maxAge"> = {
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax",
   path: "/",
+  // httpOnly: true, // Enable if your cookies should not be accessible via JavaScript
 };
 
 export const useAuthCookies = () => {
-  const getTokenCookie = (name: string, duration: number) =>
-    useCookie<string | null>(name, {
+  const getTokenCookie = (name: string, duration: number) => {
+    const cookie = useCookie<string | null>(name, {
       ...cookieOptions,
       maxAge: duration,
     });
 
-  const setToken = (
-    name: string,
-    value: string | null,
-    remember: boolean = false
-  ) => {
-    const duration = remember
-      ? name === "access_token"
-        ? DURATIONS.LONG.ACCESS
-        : DURATIONS.LONG.REFRESH
-      : name === "access_token"
-      ? DURATIONS.SHORT.ACCESS
-      : DURATIONS.SHORT.REFRESH;
+    return cookie;
+  };
+
+  const setToken = (name: string, value: string | null) => {
+    const duration =
+      name === "access_token" ? DURATIONS.ACCESS : DURATIONS.REFRESH;
 
     const cookie = getTokenCookie(name, duration);
     cookie.value = value;
   };
 
   return {
-    setAccessToken: (token: string | null, remember: boolean = false) =>
-      setToken("access_token", token, remember),
-
-    setRefreshToken: (token: string | null, remember: boolean = false) =>
-      setToken("refresh_token", token, remember),
-
+    setAccessToken: (token: string | null) => setToken("access_token", token),
+    setRefreshToken: (token: string | null) => setToken("refresh_token", token),
     getAccessToken: () =>
-      getTokenCookie("access_token", DURATIONS.SHORT.ACCESS).value,
+      getTokenCookie("access_token", DURATIONS.ACCESS).value,
     getRefreshToken: () =>
-      getTokenCookie("refresh_token", DURATIONS.SHORT.REFRESH).value,
+      getTokenCookie("refresh_token", DURATIONS.REFRESH).value,
   };
 };

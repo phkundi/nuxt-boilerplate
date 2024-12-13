@@ -1,3 +1,42 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .btn {
+    @apply py-2 px-4 rounded-md text-sm font-medium;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-hover;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-primary hover:text-primary-hover;
+  }
+
+  .btn-ghost-muted {
+    @apply bg-white text-muted hover:text-muted-hover;
+  }
+
+  .btn-danger {
+    @apply bg-error text-white hover:bg-error-hover;
+  }
+
+  .btn-accent {
+    @apply bg-accent text-white hover:bg-accent-hover;
+  }
+
+  .btn-outline {
+    @apply ring-1 ring-inset ring-gray-300 text-primary hover:text-primary-hover;
+  }
+
+  .btn-px-0 {
+    @apply px-0;
+  }
+}
+
+body,
+html {
+  @apply bg-primary;
+}
