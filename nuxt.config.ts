@@ -30,12 +30,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       siteUrl: process.env.SITE_URL,
-      apiUrl:
-        process.env.NODE_ENV === "development"
-          ? process.env.NUXT_DEV_HTTPS === "true"
-            ? process.env.API_URL?.replace("http://", "https://")
-            : process.env.API_URL
-          : process.env.API_URL, // in production, your app should always be served via https
+      apiUrl: "/api/",
       vapidPublicKey: process.env.VAPID_PUBLIC_KEY,
       firebaseEnv: process.env.FIREBASE_ENV,
       gtm: {
@@ -125,5 +120,13 @@ export default defineNuxtConfig({
       "img/*.png",
     ],
     manifest: false,
+  },
+  nitro: {
+    externals: {
+      inline: ["@prisma/client"],
+    },
+  },
+  build: {
+    transpile: ["@prisma/client"],
   },
 });

@@ -118,12 +118,9 @@ const handleSubmit = async (): Promise<void> => {
     await register(credentials);
     await new Promise((resolve) => setTimeout(resolve, 200));
     successToast("Registration successful");
+    navigateTo("/");
   } catch (err: any) {
-    if (err.status === 400 && err.data) {
-      handleApiErrors(err.data);
-    } else {
-      errorToast("An unknown error occurred", "Registration Failed");
-    }
+    errorToast(err.data.message, "Registration Failed");
   } finally {
     loading.value = false;
   }

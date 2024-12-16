@@ -123,10 +123,13 @@ export function useApi() {
 
       const responseData = await response.json();
 
+      console.log(responseData);
+
       if (!response.ok) {
         throw new Error(
           responseData.detail ||
             responseData.error ||
+            responseData.message ||
             "An error occurred while processing the request."
         );
       }
@@ -134,6 +137,7 @@ export function useApi() {
       return responseData;
     } catch (err) {
       const { error: errorToast } = useToast();
+
       if (err instanceof Error) {
         errorToast(err.message, "Error");
       } else {
