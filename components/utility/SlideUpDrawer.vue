@@ -3,23 +3,23 @@
     <div
       class="fixed inset-0 bg-gray-900 bg-opacity-60 z-50"
       v-if="modelValue"
-      @click="handleClose"
+      @click="$emit('update:modelValue', false)"
     ></div>
   </Transition>
   <Transition :name="transitionName">
     <div
       v-if="modelValue"
-      v-swipe="{
-        down: handleClose,
-      }"
       :class="[
-        'fixed z-50 bg-white shadow-up overflow-y-auto transition-all duration-300 ease-in-out',
-        'lg:rounded-2xl lg:left-1/2 lg:top-1/2 lg:transform lg:-translate-x-1/2 lg:-translate-y-1/2',
+        'fixed z-50 bg-white shadow-left overflow-y-auto transition-all duration-300 ease-in-out',
+        'h-full',
         isDesktop
-          ? `lg:w-full lg:max-h-[95vh] ${sizeClass}`
+          ? `top-0 bottom-0 rounded-l-2xl right-0 ${sizeClass}`
           : 'bottom-0 left-0 right-0 rounded-t-2xl max-h-[95vh]',
       ]"
       :style="[!isDesktop && height ? `height: ${height}` : '']"
+      v-swipe="{
+        down: handleClose,
+      }"
     >
       <div>
         <slot></slot>
@@ -29,28 +29,27 @@
 </template>
 
 <script setup lang="ts">
-type ModalSize = "sm" | "md" | "lg";
+type DrawerSize = "sm" | "md" | "lg";
 
 const props = defineProps({
   modelValue: Boolean,
   height: String,
   size: {
-    type: String as PropType<ModalSize>,
+    type: String as PropType<DrawerSize>,
     default: "md",
   },
 });
 
-const emit = defineEmits(["update:modelValue", "close"]);
+const emit = defineEmits(["update:modelValue"]);
 
 const handleClose = () => {
   emit("update:modelValue", false);
-  emit("close");
 };
 
 const isDesktop = ref(false);
 
 const checkDesktop = () => {
-  isDesktop.value = window.innerWidth >= 1024; // 1024px is the 'lg' breakpoint in Tailwind
+  isDesktop.value = window.innerWidth >= 1024;
 };
 
 onMounted(() => {
@@ -63,17 +62,34 @@ onUnmounted(() => {
 });
 
 const sizeClassMap = {
-  sm: "lg:max-w-sm",
-  md: "lg:max-w-xl",
-  lg: "lg:max-w-4xl",
+  sm: "lg:w-96", // 384px
+  md: "lg:w-[32rem]", // 512px
+  lg: "lg:w-[48rem]", // 768px
 };
 
 const sizeClass = computed(() => sizeClassMap[props.size]);
 
-const transitionName = computed(() => (isDesktop.value ? "fade" : "slide-up"));
+const transitionName = computed(() =>
+  isDesktop.value ? "slide-right" : "slide-up"
+);
 </script>
+
 <style scoped>
-/* Slide up transition */
+/* Slide right transition for desktop */
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: transform 0.3s ease;
+}
+.slide-right-enter-from,
+.slide-right-leave-to {
+  transform: translateX(100%);
+}
+.slide-right-leave-from,
+.slide-right-enter-to {
+  transform: translateX(0);
+}
+
+/* Slide up transition for mobile */
 .slide-up-enter-active,
 .slide-up-leave-active {
   transition: transform 0.3s ease;
@@ -86,7 +102,8 @@ const transitionName = computed(() => (isDesktop.value ? "fade" : "slide-up"));
 .slide-up-enter-to {
   transform: translateY(0);
 }
-/* Fade transition for the overlay and modal */
+
+/* Fade transition for the overlay */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;

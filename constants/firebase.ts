@@ -1,6 +1,6 @@
 // Paste firebase configuration here. You can find it in your project settings after adding your web app to your project
 
-interface FirebaseConfig {
+export interface FirebaseConfig {
   apiKey: string;
   authDomain: string;
   projectId: string;
@@ -10,7 +10,7 @@ interface FirebaseConfig {
   measurementId?: string;
 }
 
-const firebaseConfig: Record<string, FirebaseConfig> = {
+export const firebaseConfig: { [key: string]: FirebaseConfig } = {
   development: {
     apiKey: "",
     authDomain: "",
@@ -36,7 +36,3 @@ const firebaseConfig: Record<string, FirebaseConfig> = {
     appId: "",
   },
 };
-
-export default firebaseConfig[
-  process.env.NODE_ENV as keyof typeof firebaseConfig
-];

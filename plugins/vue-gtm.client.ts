@@ -1,4 +1,8 @@
-// Set up Google Tag manager for analytics
+/*
+    Set up Google Tag manager for analytics
+
+    You can find more information here: https://www.pkundr.com/articles/nuxt-google-analytics
+*/
 
 import { createGtm } from "@gtm-support/vue-gtm";
 import Cookies from "js-cookie";

@@ -1,12 +1,7 @@
 import { useAuthStore } from "~/store/auth";
-import { getEndpoint, endpoints } from "~/endpoints/endpoints";
-
-interface RequestConfig {
-  headers?: Record<string, string>;
-  params?: Record<string, string>;
-  queryParams?: Record<string, string>;
-  [key: string]: any;
-}
+import { getEndpoint, endpoints } from "~/api/endpoints/endpoints";
+import type { RequestConfig, HttpMethod } from "~/types/api";
+import { handleResponseData } from "~/utils/api";
 
 export function useApi() {
   const authStore = useAuthStore();
@@ -22,7 +17,7 @@ export function useApi() {
   const resolveEndpoint = (
     endpointId: string,
     config: RequestConfig = {}
-  ): { url: string; requireAuth: boolean } => {
+  ): string => {
     const parts = endpointId.split(".");
     let current: any = endpoints;
 
@@ -33,18 +28,15 @@ export function useApi() {
       current = current[part];
     }
 
-    if (typeof current.url !== "string") {
+    if (typeof current !== "string") {
       throw new Error(`Invalid endpoint configuration for: ${endpointId}`);
     }
 
-    return {
-      url: getEndpoint({
-        path: endpointId,
-        params: config.params || {},
-        queryParams: config.queryParams || {},
-      }),
-      requireAuth: current.requireAuth || false,
-    };
+    return getEndpoint({
+      path: endpointId,
+      params: config.params || {},
+      queryParams: config.queryParams || {},
+    });
   };
 
   /**
@@ -68,15 +60,11 @@ export function useApi() {
         ...config.headers,
       };
 
-      const { url, requireAuth } = resolveEndpoint(endpointId, config);
+      const url = resolveEndpoint(endpointId, config);
 
       let response: Response;
 
-      if (requireAuth) {
-        if (!authStore.isAuthenticated) {
-          throw new Error("Authentication required. Please log in.");
-        }
-
+      if (authStore.isAuthenticated) {
         switch (method.toUpperCase()) {
           case "GET":
             response = await authStore.authedGet(url, config);
@@ -110,28 +98,31 @@ export function useApi() {
         }
       } else {
         // For non-authenticated requests
-        response = await fetch(url, {
-          method,
-          headers: {
-            "Content-Type": "application/json",
-            ...config.headers,
-          },
-          body: data ? JSON.stringify(data) : null,
-          ...config,
-        });
+        if (config.server) {
+          const fetchResponse = await $fetch(url, {
+            method: method.toUpperCase() as HttpMethod,
+            headers: {
+              "Content-Type": "application/json",
+              ...config.headers,
+            },
+            body: data ? JSON.stringify(data) : undefined,
+          });
+          // Create a simple Response object with the fetch result
+          response = new Response(JSON.stringify(fetchResponse));
+        } else {
+          response = await fetch(url, {
+            method,
+            headers: {
+              "Content-Type": "application/json",
+              ...config.headers,
+            },
+            body: data ? JSON.stringify(data) : null,
+            ...config,
+          });
+        }
       }
 
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          responseData.detail ||
-            responseData.error ||
-            "An error occurred while processing the request."
-        );
-      }
-
-      return responseData;
+      return await handleResponseData(response);
     } catch (err) {
       const { error: errorToast } = useToast();
       if (err instanceof Error) {
@@ -143,28 +134,28 @@ export function useApi() {
     }
   };
 
-  /**
-   * Performs a GET request.
-   *
-   * @param {string} endpointId - The endpoint identifier.
-   * @param {Object} config - Additional fetch configuration.
-   * @returns {Promise<any>} - The response data.
-   */
   const get = <T>(
     endpointId: string,
-    config: RequestConfig = {}
+    config: RequestConfig = {},
+    server: boolean = false
   ): Promise<T> => {
+    if (server) {
+      return getSsr<T>(endpointId, config);
+    }
+
     return handleRequest<T>(endpointId, "GET", null, config);
   };
 
-  /**
-   * Performs a POST request.
-   *
-   * @param {string} endpointId - The endpoint identifier.
-   * @param {Object} data - The request payload.
-   * @param {Object} config - Additional fetch configuration.
-   * @returns {Promise<any>} - The response data.
-   */
+  const getSsr = <T>(
+    endpointId: string,
+    config: RequestConfig = {}
+  ): Promise<T> => {
+    return handleRequest<T>(endpointId, "GET", null, {
+      ...config,
+      server: true,
+    });
+  };
+
   const post = <T>(
     endpointId: string,
     data: any,
@@ -173,14 +164,6 @@ export function useApi() {
     return handleRequest<T>(endpointId, "POST", data, config);
   };
 
-  /**
-   * Performs a PUT request.
-   *
-   * @param {string} endpointId - The endpoint identifier.
-   * @param {Object} data - The request payload.
-   * @param {Object} config - Additional fetch configuration.
-   * @returns {Promise<any>} - The response data.
-   */
   const put = <T>(
     endpointId: string,
     data: any,
@@ -189,14 +172,6 @@ export function useApi() {
     return handleRequest<T>(endpointId, "PUT", data, config);
   };
 
-  /**
-   * Performs a PATCH request.
-   *
-   * @param {string} endpointId - The endpoint identifier.
-   * @param {Object} data - The request payload.
-   * @param {Object} config - Additional fetch configuration.
-   * @returns {Promise<any>} - The response data.
-   */
   const patch = <T>(
     endpointId: string,
     data: any,
@@ -205,13 +180,6 @@ export function useApi() {
     return handleRequest<T>(endpointId, "PATCH", data, config);
   };
 
-  /**
-   * Performs a DELETE request.
-   *
-   * @param {string} endpointId - The endpoint identifier.
-   * @param {Object} config - Additional fetch configuration.
-   * @returns {Promise<any>} - The response data.
-   */
   const del = <T>(
     endpointId: string,
     config: RequestConfig = {}

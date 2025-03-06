@@ -1,18 +1,16 @@
-import { useCookie } from "#app";
-
 // Define cookie options type
 interface CookieOptions {
   maxAge: number;
   secure: boolean;
   sameSite: "lax" | "strict" | "none";
   path: string;
-  httpOnly?: boolean;
+  expires: Date;
 }
 
 // Cookie durations (in seconds)
 const DURATIONS = {
-  ACCESS: 60 * 30, // 30 minutes (match backend)
-  REFRESH: 60 * 60 * 24 * 14, // 14 days
+  ACCESS: 60 * 60 * 24 * 7, // 7 days
+  REFRESH: 60 * 60 * 24 * 30, // 30 days
 };
 
 // Base cookie options
@@ -20,7 +18,7 @@ const cookieOptions: Omit<CookieOptions, "maxAge"> = {
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax",
   path: "/",
-  // httpOnly: true, // Enable if your cookies should not be accessible via JavaScript
+  expires: new Date(Date.now() + DURATIONS.ACCESS * 1000),
 };
 
 export const useAuthCookies = () => {

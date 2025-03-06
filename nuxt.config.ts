@@ -6,10 +6,20 @@ export default defineNuxtConfig({
   modules: ["@vite-pwa/nuxt", "@pinia/nuxt", "@nuxt/content"],
 
   plugins: [
-    "~/plugins/global-components.ts",
+    // Fontawesome plugin, enables fontawesome icons
     "~/plugins/fontawesome.ts",
+
+    // Touch gesture plugin, enables a vue directive for touch gestures (swipes)
+    // "~/plugins/touch-gesture.ts",
+
+    // Firebase plugin, enables firebase services for push notifications
     // "~/plugins/firebase.client.ts",
-    // "~/plugins/vue-gtm.client.ts" // Uncomment to enable Google Tag Manager
+
+    // Google Tag Manager plugin, enables Google Tag Manager
+    // "~/plugins/vue-gtm.client.ts"
+
+    // iOS optimization plugin, enhances native feel on iOS devices
+    // "~/plugins/ios-optimization.client.ts",
   ],
 
   css: [

@@ -1,9 +1,14 @@
 import { authEndpoints } from "./auth";
-import { type GetEndpointParams, type RecursiveRecord } from "./types";
 
-export const endpoints: Record<string, Record<string, Endpoint>> = {
+export const endpoints: Record<string, Record<string, string>> = {
   auth: authEndpoints,
 };
+
+export interface GetEndpointParams {
+  path: string;
+  params?: Record<string, string>;
+  queryParams?: Record<string, string>;
+}
 
 export function getEndpoint({
   path,
@@ -50,29 +55,23 @@ export function getEndpoint({
   const baseUrl = config.public.apiUrl;
 
   const parts = path.split(".");
-  let current: string | RecursiveRecord =
-    endpoints as unknown as RecursiveRecord;
+  let current: any = endpoints;
 
+  // Navigate through the endpoints object
   for (const part of parts) {
-    if (typeof current !== "object") {
+    if (!current || typeof current !== "object") {
       throw new Error(`Invalid endpoint path: ${path}`);
     }
 
-    const value: string | RecursiveRecord = current[part];
-    if (value === undefined) {
+    current = current[part];
+    if (current === undefined) {
       throw new Error(`Endpoint not found: ${path}`);
-    }
-
-    // Here's the key change: we need to handle both possible types
-    if (typeof value === "string") {
-      current = value;
-    } else {
-      current = value as RecursiveRecord;
     }
   }
 
-  if (typeof current !== "string") {
-    throw new Error(`Invalid endpoint: ${path} (not a string)`);
+  // Check if we found an Endpoint object
+  if (!current || typeof current !== "string") {
+    throw new Error(`Invalid endpoint: ${path} (not an Endpoint object)`);
   }
 
   let endpoint = current;

@@ -29,3 +29,8 @@ export interface ResetPasswordCredentials {
   password1: string;
   password2: string;
 }
+
+export interface TokenResponse {
+  access: string;
+  refresh: string;
+}

@@ -1,4 +1,12 @@
-// Initialize firebase for cloud messaging service (push notifications)
+/*
+    Initialize firebase for cloud messaging service (push notifications)
+
+    If you want to use firebase for push notifications, uncomment the code below.
+    You will need to add your firebase config to the constants/firebase.ts file.
+
+    Push notifications need to be sent from the server side.
+    You can find more information here: https://firebase.google.com/docs/cloud-messaging/js/client
+*/
 
 // import { initializeApp, getApps } from "firebase/app";
 // import firebaseConfig from "~/constants/firebase";
