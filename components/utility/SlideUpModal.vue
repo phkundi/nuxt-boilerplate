@@ -1,31 +1,33 @@
 <template>
-  <Transition name="fade">
-    <div
-      class="fixed inset-0 bg-gray-900 bg-opacity-60 z-50"
-      v-if="modelValue"
-      @click="handleClose"
-    ></div>
-  </Transition>
-  <Transition :name="transitionName">
-    <div
-      v-if="modelValue"
-      v-swipe="{
-        down: handleClose,
-      }"
-      :class="[
-        'fixed z-50 bg-white shadow-up overflow-y-auto transition-all duration-300 ease-in-out',
-        'lg:rounded-2xl lg:left-1/2 lg:top-1/2 lg:transform lg:-translate-x-1/2 lg:-translate-y-1/2',
-        isDesktop
-          ? `lg:w-full lg:max-h-[95vh] ${sizeClass}`
-          : 'bottom-0 left-0 right-0 rounded-t-2xl max-h-[95vh]',
-      ]"
-      :style="[!isDesktop && height ? `height: ${height}` : '']"
-    >
-      <div>
-        <slot></slot>
+  <Teleport to="body">
+    <Transition name="fade">
+      <div
+        class="fixed inset-0 bg-gray-900 bg-opacity-60 z-50"
+        v-if="modelValue"
+        @click="handleClose"
+      ></div>
+    </Transition>
+    <Transition :name="transitionName">
+      <div
+        v-if="modelValue"
+        v-swipe="{
+          down: handleClose,
+        }"
+        :class="[
+          'fixed z-50 bg-white shadow-up overflow-y-auto transition-all duration-300 ease-in-out',
+          'lg:rounded-2xl lg:left-1/2 lg:top-1/2 lg:transform lg:-translate-x-1/2 lg:-translate-y-1/2',
+          isDesktop
+            ? `lg:w-full lg:max-h-[95vh] ${sizeClass}`
+            : 'bottom-0 left-0 right-0 rounded-t-2xl max-h-[95vh]',
+        ]"
+        :style="[!isDesktop && height ? `height: ${height}` : '']"
+      >
+        <div>
+          <slot></slot>
+        </div>
       </div>
-    </div>
-  </Transition>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
