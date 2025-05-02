@@ -1,55 +1,55 @@
 import { useAuthStore } from "~/store/auth";
-import { getEndpoint, endpoints } from "~/api/endpoints/endpoints";
-import type { RequestConfig, HttpMethod } from "~/types/api";
+import type { HttpMethod, RequestConfig } from "~/types/api";
 import { handleResponseData } from "~/utils/api";
 
 export function useApi() {
   const authStore = useAuthStore();
+  const config = useRuntimeConfig();
+  const baseUrl = config.public.apiUrl;
 
   /**
-   * Resolves the endpoint details including URL and authentication requirement.
+   * Constructs the full URL for an API request by combining the base URL with the endpoint path.
+   * Also handles query parameters and path parameters.
    *
-   * @param {string} endpointId - The dot-notated identifier for the endpoint.
-   * @returns {Object} - An object containing the URL and requireAuth flag.
-   *
-   * @throws {Error} - If the endpoint is not found or improperly configured.
+   * @param {string} endpoint - The endpoint path
+   * @param {RequestConfig} config - Configuration object containing params and queryParams
+   * @returns {string} The complete URL for the API request
    */
-  const resolveEndpoint = (
-    endpointId: string,
+  const constructUrl = (
+    endpoint: string,
     config: RequestConfig = {}
   ): string => {
-    const parts = endpointId.split(".");
-    let current: any = endpoints;
+    let url = endpoint;
 
-    for (const part of parts) {
-      if (current[part] === undefined) {
-        throw new Error(`Endpoint not found: ${endpointId}`);
+    // Replace path parameters
+    if (config.params) {
+      for (const [key, value] of Object.entries(config.params)) {
+        url = url.replace(`<${key}>`, value);
       }
-      current = current[part];
     }
 
-    if (typeof current !== "string") {
-      throw new Error(`Invalid endpoint configuration for: ${endpointId}`);
+    // Add query parameters
+    if (config.queryParams) {
+      const queryString = new URLSearchParams(config.queryParams).toString();
+      if (queryString) {
+        url += `?${queryString}`;
+      }
     }
 
-    return getEndpoint({
-      path: endpointId,
-      params: config.params || {},
-      queryParams: config.queryParams || {},
-    });
+    return `${baseUrl}${url}`;
   };
 
   /**
    * Handles API requests based on method and authentication requirements.
    *
-   * @param {string} endpointId - The endpoint identifier.
-   * @param {string} method - The HTTP method.
-   * @param {Object|null} data - The request payload.
-   * @param {Object} config - Additional fetch configuration.
-   * @returns {Promise<any>} - The response data.
+   * @param {string} endpoint - The endpoint path
+   * @param {string} method - The HTTP method
+   * @param {Object|null} data - The request payload
+   * @param {Object} config - Additional fetch configuration
+   * @returns {Promise<any>} - The response data
    */
   const handleRequest = async <T>(
-    endpointId: string,
+    endpoint: string,
     method: string,
     data: any = null,
     config: RequestConfig = {}
@@ -60,7 +60,7 @@ export function useApi() {
         ...config.headers,
       };
 
-      const url = resolveEndpoint(endpointId, config);
+      const url = constructUrl(endpoint, config);
 
       let response: Response;
 
@@ -135,56 +135,53 @@ export function useApi() {
   };
 
   const get = <T>(
-    endpointId: string,
+    endpoint: string,
     config: RequestConfig = {},
     server: boolean = false
   ): Promise<T> => {
     if (server) {
-      return getSsr<T>(endpointId, config);
+      return getSsr<T>(endpoint, config);
     }
 
-    return handleRequest<T>(endpointId, "GET", null, config);
+    return handleRequest<T>(endpoint, "GET", null, config);
   };
 
   const getSsr = <T>(
-    endpointId: string,
+    endpoint: string,
     config: RequestConfig = {}
   ): Promise<T> => {
-    return handleRequest<T>(endpointId, "GET", null, {
+    return handleRequest<T>(endpoint, "GET", null, {
       ...config,
       server: true,
     });
   };
 
   const post = <T>(
-    endpointId: string,
+    endpoint: string,
     data: any,
     config: RequestConfig = {}
   ): Promise<T> => {
-    return handleRequest<T>(endpointId, "POST", data, config);
+    return handleRequest<T>(endpoint, "POST", data, config);
   };
 
   const put = <T>(
-    endpointId: string,
+    endpoint: string,
     data: any,
     config: RequestConfig = {}
   ): Promise<T> => {
-    return handleRequest<T>(endpointId, "PUT", data, config);
+    return handleRequest<T>(endpoint, "PUT", data, config);
   };
 
   const patch = <T>(
-    endpointId: string,
+    endpoint: string,
     data: any,
     config: RequestConfig = {}
   ): Promise<T> => {
-    return handleRequest<T>(endpointId, "PATCH", data, config);
+    return handleRequest<T>(endpoint, "PATCH", data, config);
   };
 
-  const del = <T>(
-    endpointId: string,
-    config: RequestConfig = {}
-  ): Promise<T> => {
-    return handleRequest<T>(endpointId, "DELETE", null, config);
+  const del = <T>(endpoint: string, config: RequestConfig = {}): Promise<T> => {
+    return handleRequest<T>(endpoint, "DELETE", null, config);
   };
 
   return {
