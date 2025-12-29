@@ -8,12 +8,12 @@
       leave-active-class="transition ease-in duration-200"
       leave-from-class="transform translate-y-0 opacity-100"
       leave-to-class="transform translate-y-2 opacity-0"
-      class="fixed top-0 right-0 z-50 p-6 space-y-3 w-full flex flex-col items-end pointer-events-none"
+      class="pointer-events-none fixed top-0 right-0 z-50 flex w-full flex-col items-end space-y-3 p-6"
     >
       <div
         v-for="toast in toasts"
         :key="toast.id"
-        class="max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-gray-200"
+        class="pointer-events-auto w-full max-w-sm rounded-lg bg-white shadow-lg ring-1 ring-gray-200"
       >
         <div class="p-4">
           <div class="flex items-start">
@@ -30,12 +30,12 @@
             </div>
             <div class="ml-3 w-0 flex-1">
               <p
-                class="text-sm font-medium text-primary-text"
+                class="text-primary-text text-sm font-medium"
                 v-if="toast.title"
               >
                 {{ toast.title }}
               </p>
-              <p :class="['text-sm text-muted', toast.title ? 'mt-1' : 'mt-0']">
+              <p :class="['text-muted text-sm', toast.title ? 'mt-1' : 'mt-0']">
                 {{ toast.message }}
               </p>
             </div>
@@ -60,7 +60,7 @@ import {
   faCircleXmark,
   faCircleInfo,
 } from "@fortawesome/free-solid-svg-icons";
-import { useToast } from "~/app/composables/useToast";
+import { useToast } from "~/composables/useToast";
 
 const { toasts, removeToast } = useToast();
 

@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { jwtDecode } from "jwt-decode";
 import dayjs from "dayjs";
-import { useAuthCookies } from "~/app/composables/useAuthCookies";
+import { useAuthCookies } from "~/composables/useAuthCookies";
 import {
   type AuthState,
   type LoginCredentials,
@@ -9,7 +9,7 @@ import {
   type ResetPasswordCredentials,
   type User,
   type TokenResponse,
-} from "~/app/types/auth";
+} from "~/types/auth";
 import {
   registerUser as registerUserApi,
   loginUser as loginUserApi,
@@ -18,7 +18,7 @@ import {
   getAuthenticatedUser as getAuthenticatedUserApi,
   refreshToken as refreshTokenApi,
 } from "~/api/auth-api";
-import { debug } from "~/helpers/debug";
+import { debug } from "~/utils/debug";
 
 interface JWTPayload {
   exp: number;

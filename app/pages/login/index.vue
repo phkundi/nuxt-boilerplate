@@ -1,10 +1,10 @@
 <template>
   <NuxtLayout>
-    <h1 class="text-lg font-medium text-center my-2 text-muted">
+    <h1 class="text-muted my-2 text-center text-lg font-medium">
       Access your account
     </h1>
-    <div class="w-full px-4 lg:px-0 mt-4 sm:mx-auto sm:w-full sm:max-w-[480px]">
-      <div class="lg:bg-white px-6 py-10 lg:shadow sm:rounded-lg sm:px-12">
+    <div class="mt-4 w-full px-4 sm:mx-auto sm:w-full sm:max-w-[480px] lg:px-0">
+      <div class="px-6 py-10 sm:rounded-lg sm:px-12 lg:bg-white lg:shadow">
         <form class="space-y-6" @submit.prevent="handleSubmit">
           <UtilityFormInput
             id="email"
@@ -19,13 +19,13 @@
             <div class="flex items-center justify-between">
               <label
                 for="password"
-                class="block text-sm/6 font-medium text-primary-text"
+                class="text-primary-text block text-sm/6 font-medium"
                 >Password</label
               >
               <div class="text-sm/6">
                 <NuxtLink
                   to="/forgot-password"
-                  class="font-medium text-muted hover:text-muted-hover"
+                  class="text-muted hover:text-muted-hover font-medium"
                   >Forgot password?</NuxtLink
                 >
               </div>
@@ -51,12 +51,12 @@
         </form>
       </div>
 
-      <p class="mt-10 text-center text-sm/6 text-muted">
+      <p class="text-muted mt-10 text-center text-sm/6">
         Never used OC3D before?
         {{ " " }}
         <NuxtLink
           to="/register"
-          class="font-semibold text-primary hover:text-primary-hover"
+          class="text-primary hover:text-primary-hover font-semibold"
           >Create an account</NuxtLink
         >
       </p>
@@ -64,10 +64,10 @@
   </NuxtLayout>
 </template>
 <script setup lang="ts">
-import type { LoginCredentials } from "~/app/types/auth";
+import type { LoginCredentials } from "~/types/auth";
 import { loginFormValidation } from "~/validators/auth";
-import { useToast } from "~/app/composables/useToast";
-import { useFormValidation } from "~/app/composables/useFormValidation";
+import { useToast } from "~/composables/useToast";
+import { useFormValidation } from "~/composables/useFormValidation";
 
 definePageMeta({
   layout: "auth",
@@ -108,6 +108,6 @@ watch(
       router.push("/");
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 </script>
