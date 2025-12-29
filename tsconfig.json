@@ -1,9 +1,14 @@
 {
-  // https://nuxt.com/docs/guide/concepts/typescript
   "extends": "./.nuxt/tsconfig.json",
   "compilerOptions": {
     "strict": true,
     "skipLibCheck": true,
-    "types": ["@nuxt/types", "@pinia/nuxt"]
-  }
+    "types": ["@nuxt/types", "@pinia/nuxt", "@vite-pwa/nuxt"],
+    "paths": {
+      "~/*": ["./app/*"],
+      "@/*": ["./app/*"]
+    },
+    "allowJs": true
+  },
+  "exclude": ["node_modules"]
 }

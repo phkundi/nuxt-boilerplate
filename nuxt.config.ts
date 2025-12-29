@@ -1,9 +1,19 @@
+import tailwindcss from "@tailwindcss/vite";
+
+const backendUrl =
+  process.env.NUXT_DEV_HTTPS === "development"
+    ? process.env.BACKEND_URL?.replace("http://", "https://") ||
+      "https://127.0.0.1:8000"
+    : process.env.BACKEND_URL;
+
+const apiUrl = backendUrl + "/api/";
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: "2024-04-03",
+  compatibilityDate: "2024-08-27",
   devtools: { enabled: false },
 
-  modules: ["@vite-pwa/nuxt", "@pinia/nuxt", "@nuxt/content"],
+  modules: ["@vite-pwa/nuxt", "@pinia/nuxt"],
 
   plugins: [
     // Fontawesome plugin, enables fontawesome icons
@@ -28,9 +38,18 @@ export default defineNuxtConfig({
   ],
   postcss: {
     plugins: {
-      tailwindcss: {},
-      autoprefixer: {},
+      "@tailwindcss/postcss": {},
     },
+  },
+
+  vite: {
+    server: {
+      allowedHosts: [
+        "localhost",
+        "127.0.0.1",
+      ],
+    },
+    plugins: [tailwindcss()],
   },
 
   imports: {
@@ -40,12 +59,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       siteUrl: process.env.SITE_URL,
-      apiUrl:
-        process.env.NODE_ENV === "development"
-          ? process.env.NUXT_DEV_HTTPS === "true"
-            ? process.env.API_URL?.replace("http://", "https://")
-            : process.env.API_URL
-          : process.env.API_URL, // in production, your app should always be served via https
+      apiUrl,
+      backendUrl,
       vapidPublicKey: process.env.VAPID_PUBLIC_KEY,
       firebaseEnv: process.env.FIREBASE_ENV,
       gtm: {
@@ -135,5 +150,8 @@ export default defineNuxtConfig({
       "img/*.png",
     ],
     manifest: false,
+  },
+  sourcemap: {
+    client: "hidden",
   },
 });
