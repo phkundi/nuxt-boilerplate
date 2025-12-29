@@ -60,7 +60,7 @@ import {
   faCircleXmark,
   faCircleInfo,
 } from "@fortawesome/free-solid-svg-icons";
-import { useToast } from "@/composables/useToast";
+import { useToast } from "~/app/composables/useToast";
 
 const { toasts, removeToast } = useToast();
 

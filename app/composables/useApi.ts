@@ -1,6 +1,6 @@
-import { useAuthStore } from "~/store/auth";
-import type { HttpMethod, RequestConfig } from "~/types/api";
-import { handleResponseData } from "~/utils/api";
+import { useAuthStore } from "~/app/store/auth";
+import type { HttpMethod, RequestConfig } from "~/app/types/api";
+import { handleResponseData } from "~/app/utils/api";
 
 export function useApi() {
   const authStore = useAuthStore();

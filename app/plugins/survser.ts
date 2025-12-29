@@ -6,7 +6,7 @@
 
 import { defineNuxtPlugin } from "#app";
 import _survser from "survser-js";
-import { useAuthStore } from "@/store/auth";
+import { useAuthStore } from "~/app/store/auth";
 import { watch } from "vue";
 
 export default defineNuxtPlugin((nuxtApp) => {

@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { useConfirmDialog } from "@/composables/useConfirmDialog";
+import { useConfirmDialog } from "~/app/composables/useConfirmDialog";
 
 const confirmDialog = useConfirmDialog();
 

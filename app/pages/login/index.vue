@@ -64,10 +64,10 @@
   </NuxtLayout>
 </template>
 <script setup lang="ts">
-import type { LoginCredentials } from "~/types/auth";
+import type { LoginCredentials } from "~/app/types/auth";
 import { loginFormValidation } from "~/validators/auth";
-import { useToast } from "~/composables/useToast";
-import { useFormValidation } from "~/composables/useFormValidation";
+import { useToast } from "~/app/composables/useToast";
+import { useFormValidation } from "~/app/composables/useFormValidation";
 
 definePageMeta({
   layout: "auth",

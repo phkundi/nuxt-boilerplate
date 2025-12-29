@@ -4,7 +4,7 @@ import type {
   ResetPasswordCredentials,
   TokenResponse,
   User,
-} from "~/types/auth";
+} from "~/app/types/auth";
 
 export const registerUser = async (
   credentials: RegisterCredentials,

@@ -1,4 +1,4 @@
-import { firebaseConfig, type FirebaseConfig } from "~/constants/firebase";
+import { firebaseConfig, type FirebaseConfig } from "~/app/constants/firebase";
 
 export default function getFirebaseConfig(): FirebaseConfig {
   const config = useRuntimeConfig();

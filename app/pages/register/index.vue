@@ -82,10 +82,10 @@
   </NuxtLayout>
 </template>
 <script setup lang="ts">
-import { type RegisterCredentials } from "~/types/auth";
+import { type RegisterCredentials } from "~/app/types/auth";
 import { registerFormValidation } from "~/validators/auth";
-import { useToast } from "~/composables/useToast";
-import { useFormValidation } from "~/composables/useFormValidation";
+import { useToast } from "~/app/composables/useToast";
+import { useFormValidation } from "~/app/composables/useFormValidation";
 
 const { register } = useAuthStore();
 const { success: successToast, error: errorToast } = useToast();
