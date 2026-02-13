@@ -1,35 +1,21 @@
+/**
+ * Auth Store (Pinia)
+ *
+ * Manages authentication state. Delegates auth workflows to the auth service.
+ * Does NOT implement HTTP primitives - those are in the transport layer.
+ */
+
 import { defineStore } from "pinia";
-import { jwtDecode } from "jwt-decode";
-import dayjs from "dayjs";
-import { useAuthCookies } from "~/composables/useAuthCookies";
-import {
-  type AuthState,
-  type LoginCredentials,
-  type RegisterCredentials,
-  type ResetPasswordCredentials,
-  type User,
-  type TokenResponse,
+import type {
+  AuthState,
+  LoginCredentials,
+  RegisterCredentials,
+  ResetPasswordCredentials,
+  User,
+  OAuthProvider,
 } from "~/types/auth";
-import {
-  registerUser as registerUserApi,
-  loginUser as loginUserApi,
-  forgotPassword as forgotPasswordApi,
-  resetPassword as resetPasswordApi,
-  getAuthenticatedUser as getAuthenticatedUserApi,
-  refreshToken as refreshTokenApi,
-} from "~/api/auth-api";
+import * as authService from "~/services/auth.service";
 import { debug } from "~/utils/debug";
-
-interface JWTPayload {
-  exp: number;
-  iat?: number;
-  sub?: string;
-  // Add other JWT claims you might use
-}
-
-interface ExtendedRequestInit extends RequestInit {
-  data?: any;
-}
 
 interface AuthStoreState extends AuthState {
   _refreshInterval: NodeJS.Timeout | null;
@@ -42,124 +28,102 @@ export const useAuthStore = defineStore("auth", {
     isInitialized: false,
     _refreshInterval: null,
   }),
+
   actions: {
-    async initializeAuth() {
+    /**
+     * Initialize authentication on app startup.
+     * Tries to restore a session from existing tokens.
+     */
+    async initializeAuth(): Promise<void> {
       try {
-        // Get the access and refresh tokens from the cookies
-        const { getAccessToken, getRefreshToken } = useAuthCookies();
-        const accessToken = getAccessToken();
-        const refreshToken = getRefreshToken();
+        // Initialize the auth service (sets up token refresh for HTTP client)
+        authService.initializeAuthService();
 
-        const authenticateUser = async () => {
-          await this.fetchUser();
-          await this.startTokenRefreshInterval();
+        // Try to restore session from existing tokens
+        const user = await authService.tryRestoreSession();
+
+        if (user) {
+          this.user = user;
           this.isAuthenticated = true;
-          this.isInitialized = true;
-        };
-
-        const tryRefreshToken = async () => {
-          if (!refreshToken) return false;
-          debug.log("[initializeAuth] Attempting to refresh token");
-          const newTokens = await this.refreshToken();
-          if (newTokens) {
-            await authenticateUser();
-            return true;
-          }
-          return false;
-        };
-
-        if (accessToken) {
-          const decodedToken = jwtDecode<JWTPayload>(accessToken);
-          const isExpired = dayjs
-            .unix(decodedToken.exp)
-            .subtract(5, "minute")
-            .isBefore(dayjs());
-
-          if (isExpired) {
-            debug.log("[initializeAuth] Token is expired");
-            if (await tryRefreshToken()) return;
-          } else {
-            debug.log(
-              "[initializeAuth] Token appears valid, attempting to use it"
-            );
-            try {
-              await authenticateUser();
-              return;
-            } catch (error) {
-              debug.log(
-                "[initializeAuth] Token validation failed, attempting refresh"
-              );
-              if (await tryRefreshToken()) return;
-            }
-          }
-        } else if (refreshToken) {
-          debug.log(
-            "[initializeAuth] No access token but refresh token exists"
-          );
-          if (await tryRefreshToken()) return;
+          this.startTokenRefreshInterval();
+          debug.log("[authStore.initializeAuth] Session restored");
+        } else {
+          this.user = null;
+          this.isAuthenticated = false;
+          debug.log("[authStore.initializeAuth] No session to restore");
         }
-
-        this.logout();
-        this.isAuthenticated = false;
-        this.isInitialized = true;
       } catch (error) {
-        debug.error("[initializeAuth] Auth initialization error:", error);
-        this.logout();
+        debug.error("[authStore.initializeAuth] Error:", error);
+        this.user = null;
         this.isAuthenticated = false;
+      } finally {
         this.isInitialized = true;
       }
     },
+
+    /**
+     * Register a new user and automatically log them in
+     */
     async register(
       credentials: RegisterCredentials,
-      inviterId?: string
+      inviterId?: string,
     ): Promise<User> {
       try {
-        // Make the API call to register the user
-        await registerUserApi(credentials, inviterId);
+        const user = await authService.registerAndLogin(credentials, inviterId);
 
-        // Login the user automatically after registration
-        const userData = await this.login({
-          email: credentials.email,
-          password: credentials.password,
-        });
-        // Return the user data
-        return userData;
+        this.user = user;
+        this.isAuthenticated = true;
+        this.startTokenRefreshInterval();
+
+        return user;
       } catch (error) {
-        debug.error("[register] Registration error:", error);
+        debug.error("[authStore.register] Error:", error);
         throw error;
       }
     },
+
+    /**
+     * Login with email and password
+     */
     async login(credentials: LoginCredentials): Promise<User> {
       try {
-        // Make the API call to login the user
-        const response = await loginUserApi(credentials);
+        const user = await authService.login(credentials);
 
-        // Set the access and refresh tokens in the cookies
-        const { setAccessToken, setRefreshToken } = useAuthCookies();
-        setAccessToken(response.access);
-        setRefreshToken(response.refresh);
-
-        // Set the user as authenticated
+        this.user = user;
         this.isAuthenticated = true;
+        this.startTokenRefreshInterval();
 
-        // Add a small delay to ensure cookies are set - otherwise fetchUser might fail
-        await new Promise((resolve) => setTimeout(resolve, 100));
-
-        // Fetch the user data
-        const userData = await this.fetchUser();
-        return userData;
+        return user;
       } catch (error) {
-        debug.error("[login] Login error:", error);
+        debug.error("[authStore.login] Error:", error);
         throw error;
       }
     },
-    logout() {
-      // Clear the access and refresh tokens from the cookies
-      const { setAccessToken, setRefreshToken } = useAuthCookies();
-      setAccessToken(null);
-      setRefreshToken(null);
 
-      // Set the user as not authenticated
+    /**
+     * Login with OAuth provider (Google or Apple)
+     */
+    async loginWithOAuth(provider: OAuthProvider): Promise<User> {
+      try {
+        const user = await authService.loginWithOAuth(provider);
+
+        this.user = user;
+        this.isAuthenticated = true;
+        this.startTokenRefreshInterval();
+
+        return user;
+      } catch (error) {
+        debug.error("[authStore.loginWithOAuth] Error:", error);
+        throw error;
+      }
+    },
+
+    /**
+     * Logout the current user
+     */
+    logout(): void {
+      authService.logout();
+
       this.user = null;
       this.isAuthenticated = false;
 
@@ -169,198 +133,78 @@ export const useAuthStore = defineStore("auth", {
         this._refreshInterval = null;
       }
     },
-    async forgotPassword(email: string) {
+
+    /**
+     * Request password reset email
+     */
+    async forgotPassword(email: string): Promise<void> {
       try {
-        await forgotPasswordApi(email);
+        await authService.forgotPassword(email);
       } catch (error) {
-        debug.error("[forgotPassword] Forgot password error:", error);
+        debug.error("[authStore.forgotPassword] Error:", error);
         throw error;
       }
     },
+
+    /**
+     * Reset password with token
+     */
     async resetPassword(
       credentials: ResetPasswordCredentials,
-      user_id: string,
-      token: string
-    ) {
+      userId: string,
+      token: string,
+    ): Promise<void> {
       try {
-        const response = await resetPasswordApi(credentials, user_id, token);
-        return response;
+        await authService.resetPassword(credentials, userId, token);
       } catch (error) {
-        debug.error("[resetPassword] Reset password error:", error);
+        debug.error("[authStore.resetPassword] Error:", error);
         throw error;
       }
     },
+
+    /**
+     * Fetch the current user's data
+     */
     async fetchUser(): Promise<User> {
       try {
-        // Make the API call to get the authenticated user
-        const data = await getAuthenticatedUserApi();
+        const user = await authService.fetchCurrentUser();
 
-        // Set the user and authenticated state
-        this.user = data;
+        this.user = user;
         this.isAuthenticated = true;
 
-        return data;
+        return user;
       } catch (error) {
-        debug.error("[fetchUser] Fetch user error:", error);
+        debug.error("[authStore.fetchUser] Error:", error);
         throw error;
       }
     },
-    async startTokenRefreshInterval() {
+
+    /**
+     * Start the token refresh interval
+     * Checks every 5 minutes and refreshes if token is expiring soon
+     */
+    startTokenRefreshInterval(): void {
       // Clear any existing interval
       if (this._refreshInterval) {
         clearInterval(this._refreshInterval);
       }
 
-      // Set new interval to automatically refresh the token - check every 5 minutes
-      this._refreshInterval = setInterval(async () => {
-        if (this.isAuthenticated) {
-          try {
-            await this.retrieveValidToken();
-          } catch (error) {
-            debug.error(
-              "[startTokenRefreshInterval] Token refresh failed:",
-              error
-            );
-          }
-        }
-      }, 5 * 60 * 1000); // 5 minutes
-    },
-    async retrieveValidToken(): Promise<string | null> {
-      const {
-        getAccessToken,
-        getRefreshToken,
-        setAccessToken,
-        setRefreshToken,
-      } = useAuthCookies();
-
-      const token = getAccessToken();
-
-      if (!token) {
-        const refreshToken = getRefreshToken();
-
-        if (refreshToken) {
-          try {
-            const newTokens = await this.refreshToken();
-            if (newTokens) {
-              setAccessToken(newTokens.access);
-              setRefreshToken(newTokens.refresh);
-              return newTokens.access;
+      // Set new interval
+      this._refreshInterval = setInterval(
+        async () => {
+          if (this.isAuthenticated) {
+            try {
+              await authService.ensureValidToken();
+            } catch (error) {
+              debug.error(
+                "[authStore.startTokenRefreshInterval] Refresh failed:",
+                error,
+              );
             }
-          } catch (err) {
-            debug.error("[retrieveValidToken] Error refreshing token:", err);
           }
-        }
-        return null;
-      }
-
-      const user = jwtDecode<JWTPayload>(token);
-      const isExpiringSoon = dayjs.unix(user.exp).diff(dayjs(), "minute") < 5;
-
-      if (isExpiringSoon) {
-        try {
-          const newTokens = await this.refreshToken();
-          if (newTokens) {
-            setAccessToken(newTokens.access);
-            setRefreshToken(newTokens.refresh);
-            return newTokens.access;
-          }
-        } catch (err) {
-          debug.error("[retrieveValidToken] Error refreshing token:", err);
-        }
-      }
-
-      return token;
-    },
-    async refreshToken(): Promise<TokenResponse | null> {
-      const { getRefreshToken, setRefreshToken } = useAuthCookies();
-      const refreshToken = getRefreshToken();
-      if (!refreshToken) {
-        debug.log("[refreshToken] No refresh token found");
-        return null;
-      }
-
-      try {
-        const response = await refreshTokenApi(refreshToken);
-        setRefreshToken(response.refresh);
-        return response;
-      } catch (error) {
-        debug.error("[refreshToken] Failed to refresh token:", error);
-        this.logout();
-        return null;
-      }
-    },
-
-    async authedRequest(
-      url: string,
-      originalConfig: ExtendedRequestInit = {}
-    ): Promise<Response> {
-      const config = { ...originalConfig };
-      const accessToken = await this.retrieveValidToken();
-
-      if (!accessToken) {
-        debug.log("[authedRequest] No auth token found");
-        this.logout();
-        return Promise.reject("No auth token found");
-      }
-
-      if (!config.headers) {
-        config.headers = {};
-      }
-      (config.headers as Record<string, string>)[
-        "Authorization"
-      ] = `Bearer ${accessToken}`;
-
-      if (config.data) {
-        config.body = config.data;
-        delete config.data;
-      }
-
-      try {
-        return await fetch(url, config);
-      } catch (error) {
-        debug.error(
-          "[authedRequest] Failed to make authenticated request:",
-          error
-        );
-        return Promise.reject(error);
-      }
-    },
-
-    async makeRequest(
-      method: string,
-      url: string,
-      data: any = {},
-      config: ExtendedRequestInit = {}
-    ): Promise<Response> {
-      config.method = method;
-      if (data && Object.keys(data).length > 0) {
-        config.data = data;
-      }
-      return await this.authedRequest(url, config);
-    },
-
-    async authedPost(url: string, data: any, config: ExtendedRequestInit = {}) {
-      return this.makeRequest("POST", url, data, config);
-    },
-
-    async authedPut(url: string, data: any, config: ExtendedRequestInit = {}) {
-      return this.makeRequest("PUT", url, data, config);
-    },
-
-    async authedPatch(
-      url: string,
-      data: any,
-      config: ExtendedRequestInit = {}
-    ) {
-      return this.makeRequest("PATCH", url, data, config);
-    },
-
-    async authedGet(url: string, config: ExtendedRequestInit = {}) {
-      return this.makeRequest("GET", url, null, config);
-    },
-
-    async authedDelete(url: string, config: ExtendedRequestInit = {}) {
-      return this.makeRequest("DELETE", url, null, config);
+        },
+        5 * 60 * 1000, // 5 minutes
+      );
     },
   },
 });

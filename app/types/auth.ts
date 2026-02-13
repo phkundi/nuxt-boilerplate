@@ -1,3 +1,5 @@
+export type OAuthProvider = "google" | "apple";
+
 export interface User {
   id: number | string;
   email: string;
